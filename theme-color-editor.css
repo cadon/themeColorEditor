@@ -1,0 +1,393 @@
+.theme-color-editor-control {
+    background: rgba(30, 30, 30, 0.8);
+    color: #fff;
+    border: 1px solid #000;
+    padding: 0.2rem;
+    margin: 0.3rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+    z-index: 10;
+}
+
+.theme-color-editor-control a {
+    color: white;
+}
+
+.theme-color-editor-control a:hover {
+    color: gray;
+}
+
+.theme-color-editor-control pre {
+    color: white;
+    background-color: black;
+    border: unset;
+}
+
+.theme-color-editor-close-button {
+    position: absolute;
+    right: 3px;
+    top: 3px;
+    width: 15px;
+    height: 16px;
+    padding-right: 1px;
+    text-align: center;
+    background-color: darkred;
+    color: white;
+    border: 1px solid red;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.theme-color-editor-color-picker-container {
+    position: fixed;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    width: 20rem;
+}
+
+.theme-color-editor-warning {
+    background-color: yellow;
+    border: 1px solid black;
+    color: black;
+    padding: 0.1em;
+    width: 1.8em;
+    height: 1.8em;
+    font-size: 1.5em;
+    text-align: center;
+}
+
+.theme-color-editor-var-toc {
+    position: fixed;
+    top: 3rem;
+    left: -30.5rem;
+    width: 30rem;
+    overflow: scroll;
+    min-height: 4rem;
+    height: calc(100% - 8rem);
+    padding-bottom: 4rem;
+    padding-left: 0.5rem;
+    transition: left 0.1s linear;
+}
+
+.theme-color-editor-var-toc:hover {
+    left: -.5rem;
+}
+
+.theme-color-editor-var-toc a {
+    text-decoration: none;
+}
+
+.theme-color-editor-center-popup {
+    min-width: 10rem;
+    min-height: 10rem;
+    position: fixed;
+    margin: auto;
+    top: 3rem;
+    left: 4rem;
+}
+
+.theme-color-editor-variable-name-container {
+    position: relative;
+    vertical-align: top;
+}
+
+.theme-color-editor-variable-hidden-settings {
+    visibility: hidden;
+}
+
+.theme-color-editor-variable-name-container:hover .theme-color-editor-variable-hidden-settings {
+    visibility: visible;
+}
+
+.theme-color-editor-variable-changed-indicator {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: #444;
+    border: 1px solid black;
+    width: 1em;
+    height: 1em;
+    border-bottom-right-radius: 100%;
+}
+
+.theme-color-editor-button,
+.theme-color-editor-toggle-button {
+    color: #fff;
+    border: 1px solid gray;
+    border-radius: 4px;
+    background: linear-gradient(to bottom, #333, #111);
+    padding: 0px 0.2em 1px;
+    margin: 1px 2px;
+    cursor: pointer;
+    display: block;
+    text-align: center;
+    text-decoration: none;
+    font-size: 0.9em;
+    line-height: normal;
+}
+
+.theme-color-editor-button-light {
+    color: #000;
+    background: linear-gradient(to bottom, #ddd, #bbb);
+}
+
+a.theme-color-editor-button:visited,
+a.theme-color-editor-button:hover {
+    color: #fff;
+    text-decoration: none;
+}
+
+.theme-color-editor-button:active,
+.theme-color-editor-toggle-button:has(input:checked) {
+    background: linear-gradient(to bottom, #222, #555);
+    color: #ffa;
+    box-shadow: inset 2px 2px 2px #00000099;
+}
+
+.theme-color-editor-toggle-button input {
+    display: none;
+}
+
+.theme-color-editor-number-label {
+    white-space: nowrap;
+}
+
+.theme-color-editor-toggle-button {
+    background: linear-gradient(to bottom, #542, #321);
+    display: inline-block;
+}
+
+.theme-color-editor-toggle-button:checked {
+    background: linear-gradient(to bottom, #321, #542);
+}
+
+.theme-color-editor-button.theme-color-editor-inline {
+    display: inline-block;
+}
+
+.theme-color-editor-groupbox {
+    border-radius: 3px;
+    border: 1px solid lightgray;
+    padding: 0 1px 1px;
+    margin-top: 0.7em;
+    box-sizing: border-box;
+}
+
+.theme-color-editor-groupbox-heading {
+    position: relative;
+    top: -0.2em;
+    display: table;
+    background: #333;
+    margin: -0.7em auto 0;
+    padding: 0.3em 0.2em;
+    line-height: 0.5;
+    border: 1px solid lightgray;
+    border-radius: 3px;
+    font-size: 0.9em;
+    color: #c1c1c1;
+}
+
+.theme-color-editor-groupbox .theme-color-editor-button.theme-color-editor-full-width,
+.theme-color-editor-groupbox .theme-color-editor-toggle-button.theme-color-editor-full-width {
+    box-sizing: border-box;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.contrast-color-indirectly-defined {
+    background: linear-gradient(to bottom, #b37525, #461e00);
+}
+
+.theme-color-editor-toolbar {
+    position: fixed;
+    bottom: 1rem;
+    right: 0.5rem;
+    padding: 0.3rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+    align-items: flex-end;
+    z-index: 5;
+}
+
+.theme-color-editor-checkbox-subcontainer {
+    margin-left: 1em;
+}
+
+.theme-color-editor-checkbox:has(input:not(:checked))+.theme-color-editor-checkbox-subcontainer {
+    display: none;
+}
+
+.theme-color-editor-style-text {
+    position: fixed;
+    top: 50px;
+    left: 0;
+    min-width: 50px;
+    min-height: 50px;
+    height: 70%;
+    overflow: scroll;
+    z-index: 11;
+}
+
+.transition-show {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 0.1s linear, visibility 0s;
+}
+
+.transition-hide {
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.1s linear, visibility 0.1s 0s;
+}
+
+body {
+    margin-bottom: 300px;
+    /* space for color-picker-container when scrolled to the bottom */
+}
+
+.color-picker-frame {
+    border: 1px solid #797979;
+    padding: 0.3rem 0.1rem 0.1rem;
+    border-radius: 0.2rem;
+}
+
+.custom-slider {
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 1rem;
+    height: 0.7rem;
+    cursor: pointer;
+    margin: 0.5rem 0;
+}
+
+/* chrome */
+.custom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    background: var(--custom-slider-background-color, #5cd5eb);
+    height: 1.2rem;
+    width: 1.2rem;
+    border: 2px solid white;
+    border-radius: 1rem;
+}
+
+/* firefox */
+.custom-slider::-moz-range-thumb {
+    appearance: none;
+    margin-top: -0.95rem;
+    background: var(--custom-slider-background-color, #5cd5eb);
+    height: 1.2rem;
+    width: 1.2rem;
+    border: 2px solid white;
+    border-radius: 1rem;
+}
+
+.custom-slider:focus {
+    outline: none;
+}
+
+.custom-slider:focus::-webkit-slider-thumb,
+.custom-slider:focus::-moz-range-thumb {
+    outline: 3px solid #000;
+}
+
+.wikitable tr td.selected-color-cell {
+    outline: white solid 5px;
+    outline-offset: -5px;
+    position: relative;
+    border-width: 0;
+}
+
+.wikitable tr td.selected-color-cell::before {
+    outline: black solid 7px;
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+.theme-color-editor-contrast-indicator {
+    text-align: right;
+    padding: 0 0.2rem;
+    margin: 2px 4px;
+    border: 1px solid #007745;
+    background-color: #6cffc2;
+    color: #004424;
+    border-radius: 4px;
+    min-width: 51px;
+    display: inline-block;
+}
+
+.theme-color-editor-contrast-indicator.insufficient-contrast {
+    margin: 0 2px;
+    border-color: #c85e00;
+    background-color: #ffc02c;
+    color: black;
+    border-width: 3px;
+    min-width: 55px;
+}
+
+.theme-color-editor-contrast-indicator.bad-contrast {
+    margin: 0 2px;
+    border-color: #ff6565;
+    background-color: #5b0000;
+    color: white;
+    border-width: 3px;
+    min-width: 55px;
+}
+
+.theme-color-editor-contrast-visualizer-circle {
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    display: inline-block;
+    margin: 0 2px;
+    vertical-align: middle;
+}
+
+.theme-color-editor-contrast-visualizer-circle .theme-color-editor-contrast-visualizer-circle {
+    height: 8px;
+    width: 8px;
+    margin: 4px;
+    vertical-align: top;
+}
+
+.theme-color-editor-contrast-visualizer-circle .theme-color-editor-contrast-visualizer-circle .theme-color-editor-contrast-visualizer-circle {
+    height: 4px;
+    width: 4px;
+    margin: 2px;
+}
+
+.theme-color-editor-contrast-visualizer-square {
+    height: 16px;
+    width: 16px;
+    display: inline-block;
+    margin: 0 2px;
+    vertical-align: middle;
+}
+
+.theme-color-editor-variable-title {
+    font-weight: bold;
+    margin-bottom: 0.4em;
+}
+
+.theme-color-editor-link-to-var {
+    visibility: hidden;
+}
+
+.theme-color-editor-link-to-var-wrapper:hover .theme-color-editor-link-to-var {
+    visibility: visible;
+}
+
+.theme-color-editor-pointer {
+    cursor: pointer;
+}
