@@ -2105,6 +2105,8 @@ body {
         bt.addEventListener('click', (e) => { this.setValueOfVariableByName(e.target.parentElement.parentElement.dataset.varName, this.holdVariable); });
         bt = this.createElementAndAdd('button', 'theme-color-editor-button theme-color-editor-inline', hiddenSettingsContainer, 'paste reference of copied variable, so this variable will adjust accordingly', 'paste ref');
         bt.addEventListener('click', (e) => { this.setValueOfVariableByName(e.target.parentElement.parentElement.dataset.varName, this.holdVariable, true); });
+        bt = this.createElementAndAdd('button', 'theme-color-editor-button theme-color-editor-inline', hiddenSettingsContainer, 'paste reference of copied variable with relative adjustments.\nThis will keep the variable unchanged initially but it will adjust relatively to the source variable', 'paste ref rel');
+        bt.addEventListener('click', (e) => { this.setValueOfVariableByName(e.target.parentElement.parentElement.dataset.varName, this.holdVariable, true, true); });
 
         bt = this.createElementAndAdd('button', 'theme-color-editor-button theme-color-editor-inline', buttonContainer, 'Tries to fix all the contrast issues of this variable to the colors in the contrast column in this row by changing the lightness of the var ' + colorVariableInfo.name, '◐');
         bt.addEventListener('click', (e) => { this.fixContrastWithLightness(this.variableInfo.get(e.target.parentElement.dataset.varName)); });
@@ -2343,17 +2345,26 @@ body {
      * @param {string} varName variable to be changed
      * @param {VariableInfo} variableSource variable which value is used
      * @param {boolean} pasteRef if true the variable is referenced to the source variable.
+     * @param {boolean} pasteRelativeRef if true and pasteRef is true the variable referenced to the source variable while adding relative adjustments to keep the current color.
      * @returns 
      */
-    setValueOfVariableByName: function (varName, variableSource, pasteRef = false) {
+    setValueOfVariableByName: function (varName, variableSource, pasteRef = false, pasteRelativeRef = false) {
         if (!varName || !variableSource) return;
         const varInfo = this.variableInfo.get(varName);
         if (!varInfo) return;
 
-        if (pasteRef)
+        if (pasteRef) {
+            if (pasteRelativeRef) {
+                const hsvSlSource = this.rgbToHsvSl(variableSource.rgb);
+                const hsvSlTarget = this.rgbToHsvSl(varInfo.rgb);
+                varInfo.saveExplicitRgbInOutput = true;
+                varInfo.optionHueRotate = hsvSlTarget[0] - hsvSlSource[0];
+                varInfo.optionSaturationFactor = hsvSlSource[3] > 0 ? hsvSlTarget[3] / hsvSlSource[3] : 1;
+                varInfo.optionLightnessFactor = hsvSlSource[4] > 0 ? hsvSlTarget[4] / hsvSlSource[4] : 1;
+            }
             varInfo.setValue(`var(${variableSource.name})`);
-        else
-            varInfo.setColor(variableSource.rgb);
+        }
+        else { varInfo.setColor(variableSource.rgb); }
     },
 
     /**
