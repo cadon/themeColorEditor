@@ -2384,15 +2384,19 @@ body {
      * @param {VariableInfo} variable 
      */
     updateVariableOnPage: function (variable) {
-        if (!variable) return;
-        const varValue = variable.defaultVariableStringOutput();
-        //console.log(`now updating page style of var ${variable.name}: ${varValue}`);
-        if (varValue)
-            document.documentElement.style.setProperty(variable.name, varValue);
+        if (!variable || !variable.rgb) return;
+        const varValue = variable.valueStringOutput();
         // if variable has rgb variant, also save that
         const varValueRgb = variable.hasFormatRgb ? variable.valueColorAsCommaRgbString() : null;
+        // if variable is link color, also set icon-to-link-filter value
+        const iconLinkFilter = variable.name === '--wiki-content-link-color' ? this.filterCreator.calculateFilter(variable.rgb).filterString : null;
+
+        if (varValue)
+            document.documentElement.style.setProperty(variable.name, varValue);
         if (varValueRgb)
             document.documentElement.style.setProperty(variable.name + '--rgb', varValueRgb);
+        if (iconLinkFilter)
+            document.documentElement.style.setProperty('--wiki-icon-to-link-filter', iconLinkFilter);
 
         // update variable on previews
         this.previewPopups.forEach((p) => {
@@ -2401,15 +2405,21 @@ body {
                 p.document.documentElement.style.setProperty(variable.name, varValue);
             if (varValueRgb)
                 p.document.documentElement.style.setProperty(variable.name + '--rgb', varValueRgb);
+            if (iconLinkFilter)
+                p.document.documentElement.style.setProperty('--wiki-icon-to-link-filter', iconLinkFilter);
         });
 
         // update contrast indicators
-        variable.contrastVariables?.forEach((cv) => {
-            cv.UpdateContrast(variable.rgb);
-        });
-        variable.ContrastVariableOfOtherColors?.forEach((cv) => {
-            cv.UpdateContrast();
-        });
+        if (variable.contrastVariables) {
+            variable.contrastVariables.forEach((cv) => {
+                cv.UpdateContrast(variable.rgb);
+            });
+        }
+        if (variable.contrastVariableOfOtherColors) {
+            variable.contrastVariableOfOtherColors.forEach((cv) => {
+                cv.UpdateContrast();
+            });
+        }
 
         this.colorPicker.updateColorIfVariableWasChangedOutside(variable);
     },
