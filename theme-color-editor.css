@@ -1,4 +1,4 @@
-.theme-color-editor-control {
+.tcolor-editor-control {
     background: rgba(30, 30, 30, 0.8);
     color: #fff;
     border: 1px solid #000;
@@ -10,21 +10,21 @@
     z-index: 10;
 }
 
-.theme-color-editor-control a {
+.tcolor-editor-control a {
     color: white;
 }
 
-.theme-color-editor-control a:hover {
+.tcolor-editor-control a:hover {
     color: gray;
 }
 
-.theme-color-editor-control pre {
+.tcolor-editor-control pre {
     color: white;
     background-color: black;
     border: unset;
 }
 
-.theme-color-editor-close-button {
+.tcolor-editor-close-button {
     position: absolute;
     right: 3px;
     top: 3px;
@@ -39,7 +39,7 @@
     cursor: pointer;
 }
 
-.theme-color-editor-color-picker-container {
+.tcolor-editor-color-picker-container {
     position: fixed;
     bottom: 0;
     display: flex;
@@ -48,7 +48,7 @@
     width: 20rem;
 }
 
-.theme-color-editor-warning {
+.tcolor-editor-warning {
     background-color: yellow;
     border: 1px solid black;
     color: black;
@@ -59,7 +59,7 @@
     text-align: center;
 }
 
-.theme-color-editor-var-toc {
+.tcolor-editor-var-toc {
     position: fixed;
     top: 3rem;
     left: -30.5rem;
@@ -72,15 +72,15 @@
     transition: left 0.1s linear;
 }
 
-.theme-color-editor-var-toc:hover {
+.tcolor-editor-var-toc:hover {
     left: -.5rem;
 }
 
-.theme-color-editor-var-toc a {
+.tcolor-editor-var-toc a {
     text-decoration: none;
 }
 
-.theme-color-editor-center-popup {
+.tcolor-editor-center-popup {
     min-width: 10rem;
     min-height: 10rem;
     position: fixed;
@@ -89,20 +89,20 @@
     left: 4rem;
 }
 
-.theme-color-editor-variable-name-container {
+.tcolor-editor-variable-name-container {
     position: relative;
     vertical-align: top;
 }
 
-.theme-color-editor-variable-hidden-settings {
+.tcolor-editor-variable-hidden-settings {
     visibility: hidden;
 }
 
-.theme-color-editor-variable-name-container:hover .theme-color-editor-variable-hidden-settings {
+.tcolor-editor-variable-name-container:hover .tcolor-editor-variable-hidden-settings {
     visibility: visible;
 }
 
-.theme-color-editor-variable-changed-indicator {
+.tcolor-editor-variable-changed-indicator {
     display: block;
     position: absolute;
     top: 0;
@@ -114,8 +114,8 @@
     border-bottom-right-radius: 100%;
 }
 
-.theme-color-editor-button,
-.theme-color-editor-toggle-button {
+.tcolor-editor-button,
+.tcolor-editor-toggle-button {
     color: #fff;
     border: 1px solid gray;
     border-radius: 4px;
@@ -130,46 +130,46 @@
     line-height: normal;
 }
 
-.theme-color-editor-button-light {
+.tcolor-editor-button-light {
     color: #000;
     background: linear-gradient(to bottom, #ddd, #bbb);
 }
 
-a.theme-color-editor-button:visited,
-a.theme-color-editor-button:hover {
+a.tcolor-editor-button:visited,
+a.tcolor-editor-button:hover {
     color: #fff;
     text-decoration: none;
 }
 
-.theme-color-editor-button:active,
-.theme-color-editor-toggle-button:has(input:checked) {
+.tcolor-editor-button:active,
+.tcolor-editor-toggle-button:has(input:checked) {
     background: linear-gradient(to bottom, #222, #555);
     color: #ffa;
     box-shadow: inset 2px 2px 2px #00000099;
 }
 
-.theme-color-editor-toggle-button input {
+.tcolor-editor-toggle-button input {
     display: none;
 }
 
-.theme-color-editor-number-label {
+.tcolor-editor-number-label {
     white-space: nowrap;
 }
 
-.theme-color-editor-toggle-button {
+.tcolor-editor-toggle-button {
     background: linear-gradient(to bottom, #542, #321);
     display: inline-block;
 }
 
-.theme-color-editor-toggle-button:checked {
+.tcolor-editor-toggle-button:checked {
     background: linear-gradient(to bottom, #321, #542);
 }
 
-.theme-color-editor-button.theme-color-editor-inline {
+.tcolor-editor-button.tcolor-editor-inline {
     display: inline-block;
 }
 
-.theme-color-editor-groupbox {
+.tcolor-editor-groupbox {
     border-radius: 3px;
     border: 1px solid lightgray;
     padding: 0 1px 1px;
@@ -177,7 +177,7 @@ a.theme-color-editor-button:hover {
     box-sizing: border-box;
 }
 
-.theme-color-editor-groupbox-heading {
+.tcolor-editor-groupbox-heading {
     position: relative;
     top: -0.2em;
     display: table;
@@ -191,8 +191,8 @@ a.theme-color-editor-button:hover {
     color: #c1c1c1;
 }
 
-.theme-color-editor-groupbox .theme-color-editor-button.theme-color-editor-full-width,
-.theme-color-editor-groupbox .theme-color-editor-toggle-button.theme-color-editor-full-width {
+.tcolor-editor-groupbox .tcolor-editor-button.tcolor-editor-full-width,
+.tcolor-editor-groupbox .tcolor-editor-toggle-button.tcolor-editor-full-width {
     box-sizing: border-box;
     width: 100%;
     margin-left: 0;
@@ -203,7 +203,7 @@ a.theme-color-editor-button:hover {
     background: linear-gradient(to bottom, #b37525, #461e00);
 }
 
-.theme-color-editor-toolbar {
+.tcolor-editor-toolbar {
     position: fixed;
     bottom: 1rem;
     right: 0.5rem;
@@ -215,15 +215,15 @@ a.theme-color-editor-button:hover {
     z-index: 5;
 }
 
-.theme-color-editor-checkbox-subcontainer {
+.tcolor-editor-checkbox-subcontainer {
     margin-left: 1em;
 }
 
-.theme-color-editor-checkbox:has(input:not(:checked))+.theme-color-editor-checkbox-subcontainer {
+.tcolor-editor-checkbox:has(input:not(:checked))+.tcolor-editor-checkbox-subcontainer {
     display: none;
 }
 
-.theme-color-editor-style-text {
+.tcolor-editor-style-text {
     position: fixed;
     top: 50px;
     left: 0;
@@ -315,7 +315,7 @@ body {
     z-index: 1;
 }
 
-.theme-color-editor-contrast-indicator {
+.tcolor-editor-contrast-indicator {
     text-align: right;
     padding: 0 0.2rem;
     margin: 2px 4px;
@@ -327,7 +327,7 @@ body {
     display: inline-block;
 }
 
-.theme-color-editor-contrast-indicator.insufficient-contrast {
+.tcolor-editor-contrast-indicator.insufficient-contrast {
     margin: 0 2px;
     border-color: #c85e00;
     background-color: #ffc02c;
@@ -336,7 +336,7 @@ body {
     min-width: 55px;
 }
 
-.theme-color-editor-contrast-indicator.bad-contrast {
+.tcolor-editor-contrast-indicator.bad-contrast {
     margin: 0 2px;
     border-color: #ff6565;
     background-color: #5b0000;
@@ -345,7 +345,7 @@ body {
     min-width: 55px;
 }
 
-.theme-color-editor-contrast-visualizer-circle {
+.tcolor-editor-contrast-visualizer-circle {
     height: 16px;
     width: 16px;
     border-radius: 50%;
@@ -354,20 +354,20 @@ body {
     vertical-align: middle;
 }
 
-.theme-color-editor-contrast-visualizer-circle .theme-color-editor-contrast-visualizer-circle {
+.tcolor-editor-contrast-visualizer-circle .tcolor-editor-contrast-visualizer-circle {
     height: 8px;
     width: 8px;
     margin: 4px;
     vertical-align: top;
 }
 
-.theme-color-editor-contrast-visualizer-circle .theme-color-editor-contrast-visualizer-circle .theme-color-editor-contrast-visualizer-circle {
+.tcolor-editor-contrast-visualizer-circle .tcolor-editor-contrast-visualizer-circle .tcolor-editor-contrast-visualizer-circle {
     height: 4px;
     width: 4px;
     margin: 2px;
 }
 
-.theme-color-editor-contrast-visualizer-square {
+.tcolor-editor-contrast-visualizer-square {
     height: 16px;
     width: 16px;
     display: inline-block;
@@ -375,19 +375,19 @@ body {
     vertical-align: middle;
 }
 
-.theme-color-editor-variable-title {
+.tcolor-editor-variable-title {
     font-weight: bold;
     margin-bottom: 0.4em;
 }
 
-.theme-color-editor-link-to-var {
+.tcolor-editor-link-to-var {
     visibility: hidden;
 }
 
-.theme-color-editor-link-to-var-wrapper:hover .theme-color-editor-link-to-var {
+.tcolor-editor-link-to-var-wrapper:hover .tcolor-editor-link-to-var {
     visibility: visible;
 }
 
-.theme-color-editor-pointer {
+.tcolor-editor-pointer {
     cursor: pointer;
 }

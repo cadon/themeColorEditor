@@ -108,7 +108,7 @@ const themeColorEditor = {
     initialize: function () {
         // check if page should display the color editor
         let initializeColorEditor = false;
-        for (let table of document.querySelectorAll("table")) {
+        for (let table of document.querySelectorAll('table')) {
             if (table.rows.length < 2 || table.rows[0].length < 3) return;
             // the color table contains "Variable name" in first cell
             if (table.rows[0].cells[0].textContent.trim() !== 'Variable name') return;
@@ -417,9 +417,9 @@ const themeColorEditor = {
                     selectors.forEach((s) => {
                         let selectorName = s.trim();
                         if (!selectorName
-                            || (selectorName != ":root"
-                                && selectorName != ".view-light"
-                                && selectorName != ".view-dark"
+                            || (selectorName != ':root'
+                                && selectorName != '.view-light'
+                                && selectorName != '.view-dark'
                                 && !selectorName.startsWith('.theme-'))
                         ) return;
 
@@ -438,7 +438,7 @@ const themeColorEditor = {
                     });
                 }
             } catch (e) {
-                console.warn("can't access stylesheet:", e);
+                console.warn('cannot access stylesheet: ', e);
             }
         }
 
@@ -728,73 +728,73 @@ const themeColorEditor = {
     //#region controls
     addToolbar: function () {
         const toolBarElement = document.createElement('div');
-        toolBarElement.className = "theme-color-editor-toolbar theme-color-editor-control";
+        toolBarElement.className = 'tcolor-editor-toolbar tcolor-editor-control';
         document.body.appendChild(toolBarElement);
 
         // adjust global lightness
-        const divTools = this.createElementAndAdd('div', 'theme-color-editor-groupbox', toolBarElement);
-        this.createElementAndAdd('span', 'theme-color-editor-groupbox-heading', divTools, null, 'global color tools');
-        let bt = this.createElementAndAdd('button', 'theme-color-editor-button theme-color-editor-full-width', divTools, 'Inverts the luminance of all colors (switching dark <-> light)\nThe effect might be unexpected.', "invert all color's luminance");
+        const divTools = this.createElementAndAdd('div', 'tcolor-editor-groupbox', toolBarElement);
+        this.createElementAndAdd('span', 'tcolor-editor-groupbox-heading', divTools, null, 'global color tools');
+        let bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divTools, 'Inverts the luminance of all colors (switching dark <-> light)\nThe effect might be unexpected.', 'invert all color\'s luminance');
         bt.addEventListener('click', () => { this.invertAllLightness(true) });
-        bt = this.createElementAndAdd('button', 'theme-color-editor-button theme-color-editor-full-width', divTools, 'Inverts the lightness of all colors (switching dark <-> light)\nAlso consider to use the "rebase" button to use the according view as base (light / dark).', "invert all color's lightness");
+        bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divTools, 'Inverts the lightness of all colors (switching dark <-> light)\nAlso consider to use the "rebase" button to use the according view as base (light / dark).', 'invert all color\'s lightness');
         bt.addEventListener('click', () => { this.invertAllLightness() });
 
         // theme loader
-        const divThemeSelector = this.createElementAndAdd('div', 'theme-color-editor-groupbox', toolBarElement);
-        this.createElementAndAdd('span', 'theme-color-editor-groupbox-heading', divThemeSelector, null, 'themes');
+        const divThemeSelector = this.createElementAndAdd('div', 'tcolor-editor-groupbox', toolBarElement);
+        this.createElementAndAdd('span', 'tcolor-editor-groupbox-heading', divThemeSelector, null, 'themes');
         divThemeSelector.appendChild(this.createCheckbox('view-light',
             (e) => { this.themeBaseDark = e.target.checked; e.target.nextSibling.nodeValue = e.target.checked ? 'view-dark' : 'view-light'; },
             'view the theme is based on', true));
         this.themeBaseSelector = this.createElementAndAdd('select', null, divThemeSelector);
-        bt = this.createElementAndAdd('button', 'theme-color-editor-button theme-color-editor-full-width', divThemeSelector, 'Sets all variables to the values of a preset view (light/dark) and theme.', 'load theme variables');
+        bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divThemeSelector, 'Sets all variables to the values of a preset view (light/dark) and theme.', 'load theme variables');
         bt.addEventListener('click', () => { this.applyTheme(this.themeBaseSelector.options[this.themeBaseSelector.selectedIndex].text); });
-        bt = this.createElementAndAdd('button', 'theme-color-editor-button theme-color-editor-full-width', divThemeSelector,
+        bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divThemeSelector,
             'Sets all base values of the variables to the selected view (light or dark).\nThis has an effect whether a variable will be in the output or not (variables equal to their base value of the view won\'t be included)',
             'rebase variables');
         bt.addEventListener('click', () => { this.applyBaseTheme(this.themeBaseDark ? 'view-dark' : 'view-light'); });
 
         // import export
-        const divImportExport = this.createElementAndAdd('div', 'theme-color-editor-groupbox', toolBarElement);
-        this.createElementAndAdd('span', 'theme-color-editor-groupbox-heading', divImportExport, null, 'import/export css');
+        const divImportExport = this.createElementAndAdd('div', 'tcolor-editor-groupbox', toolBarElement);
+        this.createElementAndAdd('span', 'tcolor-editor-groupbox-heading', divImportExport, null, 'import/export css');
         divImportExport.appendChild(this.createCheckbox('include --rgb',
             (e) => { this.exportIncludeRgbVariants = e.target.checked; },
             'Include --rgb color variables for variables that have them.'));
         divImportExport.appendChild(this.createCheckbox('include explicit adjustments',
             (e) => { this.exportIncludeExplicitOptions = e.target.checked; },
             'Include color options set for explicit color adjustments (e.g. invert, hue-rotate).\nThis should be only enabled if you want to save your work and import later.\nThis should not be enabled to export the css for use on a wiki.'));
-        const inOutButton = this.createElementAndAdd('button', 'theme-color-editor-button theme-color-editor-full-width', divImportExport, null, 'input output view toggle');
+        const inOutButton = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divImportExport, null, 'input output view toggle');
         inOutButton.addEventListener('click', () => { this.inOutStyleSheetEl.classList.toggle('transition-hide'); });
-        bt = this.createElementAndAdd('button', 'theme-color-editor-button theme-color-editor-full-width', divImportExport, null, 'copy styles to clipboard');
+        bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divImportExport, null, 'copy styles to clipboard');
         bt.addEventListener('click', () => { navigator.clipboard.writeText(this.exportStyles(true)); });
         // in out element
-        this.inOutStyleSheetEl = this.createElementAndAdd('div', 'theme-color-editor-control theme-color-editor-center-popup transition-show transition-hide', document.body);
+        this.inOutStyleSheetEl = this.createElementAndAdd('div', 'tcolor-editor-control tcolor-editor-center-popup transition-show transition-hide', document.body);
         this.createElementAndAdd('div', null, this.inOutStyleSheetEl, null, 'css import/export');
-        bt = this.createElementAndAdd('div', 'theme-color-editor-close-button', this.inOutStyleSheetEl, null, '×');
-        bt.addEventListener('click', (e) => { e.target.parentElement.classList.toggle("transition-hide", true) });
+        bt = this.createElementAndAdd('div', 'tcolor-editor-close-button', this.inOutStyleSheetEl, null, '×');
+        bt.addEventListener('click', (e) => { e.target.parentElement.classList.toggle('transition-hide', true) });
         this.inOutTextarea = this.createElementAndAdd('textarea', null, this.inOutStyleSheetEl, null, null, { 'rows': '20', 'cols': '106' });
         const buttonContainer = this.createElementAndAdd('div', null, this.inOutStyleSheetEl);
-        const btImportLight = this.createElementAndAdd('button', 'theme-color-editor-button theme-color-editor-button-light theme-color-editor-inline', buttonContainer, null, '↷import with light-view as base');
+        const btImportLight = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-button-light tcolor-editor-inline', buttonContainer, null, '↷import with light-view as base');
         btImportLight.addEventListener('click', () => this.importStyles(true));
-        const btImportDark = this.createElementAndAdd('button', 'theme-color-editor-button theme-color-editor-inline', buttonContainer, null, '↷import with dark-view as base');
+        const btImportDark = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-inline', buttonContainer, null, '↷import with dark-view as base');
         btImportDark.addEventListener('click', () => this.importStyles(false));
-        const btExport = this.createElementAndAdd('button', 'theme-color-editor-button theme-color-editor-inline', buttonContainer, null, '⮍replace text above with current theme definitions');
+        const btExport = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-inline', buttonContainer, null, '⮍replace text above with current theme definitions');
         btExport.addEventListener('click', () => this.exportStyles());
 
         // live preview controls
-        const divPreview = this.createElementAndAdd('div', 'theme-color-editor-groupbox', toolBarElement);
-        this.createElementAndAdd('span', 'theme-color-editor-groupbox-heading', divPreview, null, 'live preview');
-        let previewPageSavedValue = localStorage.getItem('theme-color-editor-preview-page-name');
+        const divPreview = this.createElementAndAdd('div', 'tcolor-editor-groupbox', toolBarElement);
+        this.createElementAndAdd('span', 'tcolor-editor-groupbox-heading', divPreview, null, 'live preview');
+        let previewPageSavedValue = localStorage.getItem('tcolor-editor-preview-page-name');
         if (!previewPageSavedValue) previewPageSavedValue = '';
         const previewPageEl = this.createElementAndAdd('input', null, divPreview, 'Enter the name of a wiki page for a live preview of the set colors\nE.g. "Wood", "Main Page" or "Wood?diff=prev&oldid=6699"', 'preview', {
-            'type': 'text', 'placeholder': 'Wiki page name', 'id': 'theme-color-editor-preview-page-name',
+            'type': 'text', 'placeholder': 'Wiki page name', 'id': 'tcolor-editor-preview-page-name',
             'value': previewPageSavedValue
         });
         previewPageEl.addEventListener('keyup', (e) => {
-            if (e.key === "Enter") this.openPreviewWindow();
+            if (e.key === 'Enter') this.openPreviewWindow();
         });
-        bt = this.createElementAndAdd('button', 'theme-color-editor-button theme-color-editor-full-width', divPreview, null, "preview popup");
+        bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divPreview, null, 'preview popup');
         bt.addEventListener('click', () => { this.openPreviewWindow(); });
-        bt = this.createElementAndAdd('button', 'theme-color-editor-button', divPreview, "set default popup location", 'save loc');
+        bt = this.createElementAndAdd('button', 'tcolor-editor-button', divPreview, 'set default popup location', 'save loc');
         bt.addEventListener('click', this.saveDefaultPopupLocation);
     },
     //#endregion
@@ -1250,9 +1250,9 @@ const themeColorEditor = {
             }, 50);
 
             this._container = document.createElement('div');
-            this._container.className = 'theme-color-editor-color-picker-container theme-color-editor-control transition-show transition-hide';
+            this._container.className = 'tcolor-editor-color-picker-container tcolor-editor-control transition-show transition-hide';
 
-            let bt = themeColorEditor.createElementAndAdd('div', 'theme-color-editor-close-button', this._container, null, '×');
+            let bt = themeColorEditor.createElementAndAdd('div', 'tcolor-editor-close-button', this._container, null, '×');
             bt.addEventListener('click', () => { themeColorEditor.editColorInColorPicker(null) });
             this._titleTextEl = themeColorEditor.createElementAndAdd('div', null, this._container, null, null, { 'id': 'color-picker-title' }, 'margin: 0.4rem;');
             this._colorPreviewEl = themeColorEditor.createElementAndAdd('div', null, this._container, null, null, { 'id': 'color-preview' }, 'height: 50px; border: 1px solid #000; border-radius: 5px;');
@@ -1292,16 +1292,16 @@ const themeColorEditor = {
 
             // slider
             function addColorSlider(container, name, id, updateCallback, max, min = 0, styleRange = null) {
-                const cpFrame = themeColorEditor.createElementAndAdd('div', 'color-picker-frame', container, null, null, { 'id': 'theme-creator-color-picker-slider-' + id }, "display: " + (name == "Hue" ? "block" : "none"));
+                const cpFrame = themeColorEditor.createElementAndAdd('div', 'color-picker-frame', container, null, null, { 'id': 'theme-creator-color-picker-slider-' + id }, 'display: ' + (name == 'Hue' ? 'block' : 'none'));
                 themeColorEditor.createElementAndAdd('label', null, cpFrame, null, name);
                 const inputEl = themeColorEditor.createElementAndAdd('input', null, cpFrame, null, null, { 'type': 'number', 'min': min, 'max': max }, 'float: right;');
                 const rangeEl = themeColorEditor.createElementAndAdd('input', 'custom-slider', cpFrame, null, null, { 'type': 'range', 'min': min, 'max': max }, styleRange);
-                inputEl.addEventListener("input", () => {
+                inputEl.addEventListener('input', () => {
                     if (rangeEl.value == inputEl.value) return;
                     rangeEl.value = inputEl.value;
                     updateCallback();
                 });
-                rangeEl.addEventListener("input", () => {
+                rangeEl.addEventListener('input', () => {
                     if (inputEl.value == rangeEl.value) return;
                     inputEl.value = rangeEl.value;
                     updateCallback();
@@ -1421,7 +1421,7 @@ const themeColorEditor = {
      */
     parseVariables: function () {
         // add onclick events on the color variable table cells
-        const tables = document.querySelectorAll("table");
+        const tables = document.querySelectorAll('table');
 
         tables.forEach((table) => {
             if (table.rows.length < 2 || table.rows[0].length < 3) return;
@@ -1430,15 +1430,15 @@ const themeColorEditor = {
             const notesColumnIndex = Array.from(table.rows[0].cells).findIndex((c) => c.textContent == 'Notes');
 
             // set columns not too narrow
-            table.rows[0].cells[0].style.minWidth = "18em";
-            table.rows[0].cells[table.rows[0].cells.length - 1].style.minWidth = "25em";
+            table.rows[0].cells[0].style.minWidth = '18em';
+            table.rows[0].cells[table.rows[0].cells.length - 1].style.minWidth = '25em';
 
             // add the controls to the color table
             // a color variable row is expected to have in that order (not necessarily consecutive)
             // * a cell containing only the color variable name
             // * a cell with no content and the color variable used for the background color
             // * a cell with a list of variable names that should have sufficient contrast
-            Array.from(table.querySelectorAll("tr")).forEach((row) => {
+            Array.from(table.querySelectorAll('tr')).forEach((row) => {
                 this.processVariableTableRow(row, notesColumnIndex);
             });
         });
@@ -1453,7 +1453,7 @@ const themeColorEditor = {
         let rowVariableName = undefined;
         let rowVariableNameElement = undefined;
         let rowVariableInfo = undefined;
-        Array.from(row.querySelectorAll("td")).forEach((cell, columnIndex) => {
+        Array.from(row.querySelectorAll('td')).forEach((cell, columnIndex) => {
             const cellStyleBackgroundColor = cell.style.backgroundColor;
 
             // check if variable name cell
@@ -1461,7 +1461,7 @@ const themeColorEditor = {
                 rowVariableName = cell.innerHTML.trim();
                 cell.innerHTML = '';
                 cell.setAttribute('id', 'var-' + rowVariableName);
-                this.createElementAndAdd('div', 'theme-color-editor-variable-title', cell, null, rowVariableName);
+                this.createElementAndAdd('div', 'tcolor-editor-variable-title', cell, null, rowVariableName);
                 rowVariableNameElement = cell;
             }
 
@@ -1492,13 +1492,13 @@ const themeColorEditor = {
                         const contrastVarNameMatch = spanVar.textContent.match(/--[\w-]+/);
                         if (!contrastVarNameMatch) return;
                         const contrastVarName = contrastVarNameMatch[0];
-                        cell.classList.add('theme-color-editor-contrast-cell');
+                        cell.classList.add('tcolor-editor-contrast-cell');
 
                         // at this point the variableInfo objects are not yet all in the map variableInfo
                         // so save only the var names at this point and set the actual objects later.
 
                         const contrastElement = document.createElement('span');
-                        contrastElement.className = 'theme-color-editor-contrast-indicator';
+                        contrastElement.className = 'tcolor-editor-contrast-indicator';
 
                         const contrastVariableInfo = new this.ContrastVariableInfo(contrastVarName, contrastElement)
 
@@ -1520,20 +1520,20 @@ const themeColorEditor = {
                             spanVar.parentElement.insertBefore(contrastElement, spanVar);
 
                             // luminance adjust button to get contrast
-                            const contrastFixBt = this.createElementAndAdd('span', 'theme-color-editor-button theme-color-editor-inline', null, null, '◐');
+                            const contrastFixBt = this.createElementAndAdd('span', 'tcolor-editor-button tcolor-editor-inline', null, null, '◐');
                             contrastFixBt.addEventListener('click', () => this.fixContrastWithLightness(contrastVariableInfo.variable, new this.ContrastVariableInfo(rowVariableInfo, contrastVariableInfo.minContrast)));
                             spanVar.parentElement.insertBefore(contrastFixBt, spanVar);
-                            contrastVariableInfo.elementResetToBaseColor = this.createElementAndAdd('span', 'theme-color-editor-button theme-color-editor-inline', null, 'Resets color to base value.', '⭯');
+                            contrastVariableInfo.elementResetToBaseColor = this.createElementAndAdd('span', 'tcolor-editor-button tcolor-editor-inline', null, 'Resets color to base value.', '⭯');
                             contrastVariableInfo.elementResetToBaseColor.addEventListener('click', () => {
                                 if (contrastVariableInfo.variable)
                                     contrastVariableInfo.variable.resetToBase();
                             });
                             spanVar.parentElement.insertBefore(contrastVariableInfo.elementResetToBaseColor, spanVar);
 
-                            let contrastVisualizer = this.createElementAndAdd('div', 'theme-color-editor-contrast-visualizer-circle', null, 'contrast visualizer', null, null, 'background-color: var(' + contrastVarName + ')');
+                            let contrastVisualizer = this.createElementAndAdd('div', 'tcolor-editor-contrast-visualizer-circle', null, 'contrast visualizer', null, null, 'background-color: var(' + contrastVarName + ')');
                             spanVar.parentElement.insertBefore(contrastVisualizer, spanVar);
-                            contrastVisualizer = this.createElementAndAdd('div', 'theme-color-editor-contrast-visualizer-circle', contrastVisualizer, null, null, null, 'background-color: var(' + rowVariableName + ')');
-                            this.createElementAndAdd('div', 'theme-color-editor-contrast-visualizer-circle', contrastVisualizer, null, null, null, 'background-color: var(' + contrastVarName + ')');
+                            contrastVisualizer = this.createElementAndAdd('div', 'tcolor-editor-contrast-visualizer-circle', contrastVisualizer, null, null, null, 'background-color: var(' + rowVariableName + ')');
+                            this.createElementAndAdd('div', 'tcolor-editor-contrast-visualizer-circle', contrastVisualizer, null, null, null, 'background-color: var(' + contrastVarName + ')');
 
                             this.addVariableLink(spanVar);
                         }
@@ -1584,7 +1584,7 @@ const themeColorEditor = {
         });
 
         // add toc entries alphabetically sorted
-        const tocElement = this.createElementAndAdd('div', 'theme-color-editor-control theme-color-editor-var-toc', document.body)
+        const tocElement = this.createElementAndAdd('div', 'tcolor-editor-control tcolor-editor-var-toc', document.body)
         this.createElementAndAdd('h3', null, tocElement, null, 'Variable list (alphabetically sorted)', null, 'color:white');
         let sortedArray = Array.from(this.variableInfo.keys());
         sortedArray.sort();
@@ -1626,7 +1626,7 @@ const themeColorEditor = {
      * @returns 
      */
     createCheckbox: function (labelText, callbackOnChange = null, title = null, toggleButton = false, className = null) {
-        const label = this.createElementAndAdd('label', (className ? className + ' ' : '') + (toggleButton ? 'theme-color-editor-toggle-button' : 'theme-color-editor-checkbox'), null, title, labelText, null, 'white-space: nowrap');
+        const label = this.createElementAndAdd('label', (className ? className + ' ' : '') + (toggleButton ? 'tcolor-editor-toggle-button' : 'tcolor-editor-checkbox'), null, title, labelText, null, 'white-space: nowrap');
         const cb = this.createElementAndAdd('input', null, null, null, null, { 'type': 'checkbox' });
         if (callbackOnChange)
             cb.addEventListener('change', callbackOnChange);
@@ -1657,7 +1657,7 @@ const themeColorEditor = {
         }
         else if (inputType == 'number') {
             if (controlText) {
-                inputContainer = this.createElementAndAdd('label', 'theme-color-editor-number-label', addToElement, titleText, controlText);
+                inputContainer = this.createElementAndAdd('label', 'tcolor-editor-number-label', addToElement, titleText, controlText);
                 const input = this.createElementAndAdd('input', null, null, null, null, attributes);
                 inputContainer.insertBefore(input, inputContainer.firstChild);
             }
@@ -1705,12 +1705,12 @@ const themeColorEditor = {
         const varName = varInfo ? varInfo[0] : null;
         if (!varName) return;
         el.addEventListener('click', () => this.editColorInColorPicker(varName));
-        el.classList.add('theme-color-editor-pointer');
+        el.classList.add('tcolor-editor-pointer');
         el.title += 'Click to edit color';
 
-        const linkToVarWrapper = this.createElementAndAdd('span', 'theme-color-editor-link-to-var-wrapper');
+        const linkToVarWrapper = this.createElementAndAdd('span', 'tcolor-editor-link-to-var-wrapper');
         el.parentElement.insertBefore(linkToVarWrapper, el);
-        const linkToVar = this.createElementAndAdd('a', 'theme-color-editor-button theme-color-editor-inline theme-color-editor-link-to-var', null, 'jump to color row', '↪', { 'href': '#var-' + varName });
+        const linkToVar = this.createElementAndAdd('a', 'tcolor-editor-button tcolor-editor-inline tcolor-editor-link-to-var', null, 'jump to color row', '↪', { 'href': '#var-' + varName });
         linkToVarWrapper.append(linkToVar, el);
     },
 
@@ -1723,22 +1723,22 @@ const themeColorEditor = {
         // copy paste buttons
         const buttonContainer = this.createElementAndAdd('div', null, colorVarNameElement);
         buttonContainer.dataset.varName = colorVariableInfo.name;
-        colorVariableInfo.elementEqualToBaseColor = this.createElementAndAdd('span', 'theme-color-editor-variable-changed-indicator', buttonContainer);
+        colorVariableInfo.elementEqualToBaseColor = this.createElementAndAdd('span', 'tcolor-editor-variable-changed-indicator', buttonContainer);
         colorVariableInfo.elementEqualToBaseColor.style.backgroundColor = 'gray';
 
-        const hiddenSettingsContainer = this.createElementAndAdd('div', 'theme-color-editor-variable-hidden-settings', buttonContainer);
-        let bt = this.createElementAndAdd('button', 'theme-color-editor-button theme-color-editor-inline', hiddenSettingsContainer, 'copy this variable value to paste it in other variables', 'copy');
+        const hiddenSettingsContainer = this.createElementAndAdd('div', 'tcolor-editor-variable-hidden-settings', buttonContainer);
+        let bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-inline', hiddenSettingsContainer, 'copy this variable value to paste it in other variables', 'copy');
         bt.addEventListener('click', (e) => { this.holdVariable = this.variableInfo.get(e.target.parentElement.parentElement.dataset.varName); });
-        bt = this.createElementAndAdd('button', 'theme-color-editor-button theme-color-editor-inline', hiddenSettingsContainer, 'paste color value directly without dependency', 'paste value');
+        bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-inline', hiddenSettingsContainer, 'paste color value directly without dependency', 'paste value');
         bt.addEventListener('click', (e) => { this.setValueOfVariableByName(e.target.parentElement.parentElement.dataset.varName, this.holdVariable); });
-        bt = this.createElementAndAdd('button', 'theme-color-editor-button theme-color-editor-inline', hiddenSettingsContainer, 'paste reference of copied variable, so this variable will adjust accordingly', 'paste ref');
+        bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-inline', hiddenSettingsContainer, 'paste reference of copied variable, so this variable will adjust accordingly', 'paste ref');
         bt.addEventListener('click', (e) => { this.setValueOfVariableByName(e.target.parentElement.parentElement.dataset.varName, this.holdVariable, true); });
-        bt = this.createElementAndAdd('button', 'theme-color-editor-button theme-color-editor-inline', hiddenSettingsContainer, 'paste reference of copied variable with relative adjustments.\nThis will keep the variable unchanged initially but it will adjust relatively to the source variable', 'paste ref rel');
+        bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-inline', hiddenSettingsContainer, 'paste reference of copied variable with relative adjustments.\nThis will keep the variable unchanged initially but it will adjust relatively to the source variable', 'paste ref rel');
         bt.addEventListener('click', (e) => { this.setValueOfVariableByName(e.target.parentElement.parentElement.dataset.varName, this.holdVariable, true, true); });
 
-        bt = this.createElementAndAdd('button', 'theme-color-editor-button theme-color-editor-inline', buttonContainer, 'Tries to fix all the contrast issues of this variable to the colors in the contrast column in this row by changing the lightness of the var ' + colorVariableInfo.name, '◐');
+        bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-inline', buttonContainer, 'Tries to fix all the contrast issues of this variable to the colors in the contrast column in this row by changing the lightness of the var ' + colorVariableInfo.name, '◐');
         bt.addEventListener('click', (e) => { this.fixContrastWithLightness(this.variableInfo.get(e.target.parentElement.dataset.varName)); });
-        bt = colorVariableInfo.elementResetToBaseColor = this.createElementAndAdd('button', 'theme-color-editor-button theme-color-editor-inline', buttonContainer, 'reset color', '⭯');
+        bt = colorVariableInfo.elementResetToBaseColor = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-inline', buttonContainer, 'reset color', '⭯');
         bt.addEventListener('click', (e) => {
             const varInfo = this.variableInfo.get(e.target.parentElement.dataset.varName);
             if (varInfo)
@@ -1749,15 +1749,15 @@ const themeColorEditor = {
         this.addColorOptionControlAndBind('checkbox', 'use indirect definition',
             'use the indirect definition in the text input below for this color (will update automatically if the according colors change)',
             colorVariableInfo, 'useIndirectDefinition', buttonContainer);
-        const indirectDefinitionEl = this.createElementAndAdd('input', null, buttonContainer, null, null, { 'type': 'text' }, "width:100%;");
+        const indirectDefinitionEl = this.createElementAndAdd('input', null, buttonContainer, null, null, { 'type': 'text' }, 'width:100%;');
         colorVariableInfo.setDependsOnVarsElement(indirectDefinitionEl);
 
-        let subContainer = this.createElementAndAdd('div', 'theme-color-editor-checkbox-subcontainer', buttonContainer);
+        let subContainer = this.createElementAndAdd('div', 'tcolor-editor-checkbox-subcontainer', buttonContainer);
         this.addColorOptionControlAndBind('checkbox', 'save explicit color output',
             'save the explicit color value in the css output instead of the indirect definition\nThis allows further automatic adjustments like inversion or hue rotation',
             colorVariableInfo, 'saveExplicitRgbInOutput', subContainer);
 
-        subContainer = this.createElementAndAdd('div', 'theme-color-editor-checkbox-subcontainer', subContainer);
+        subContainer = this.createElementAndAdd('div', 'tcolor-editor-checkbox-subcontainer', subContainer);
         //cbSaveExplicit.addEventListener('change', function () { subContainer.style.display = this.checked ? 'block' : 'none' });
         this.addColorOptionControlAndBind('checkbox', 'invert', 'invert the color', colorVariableInfo, 'optionInvert', subContainer);
         this.createElementAndAdd('br', null, subContainer);
@@ -1767,7 +1767,7 @@ const themeColorEditor = {
         this.createElementAndAdd('br', null, subContainer);
         this.addColorOptionControlAndBind('number', ' lightness', 'lightness factor (1: no change)', colorVariableInfo, 'optionLightnessFactor', subContainer, { 'size': '3', 'value': '1', 'min': '0', 'step': '0.1' });
 
-        colorVarNameElement.classList.add('theme-color-editor-variable-name-container');
+        colorVarNameElement.classList.add('tcolor-editor-variable-name-container');
     },
 
     /**
@@ -1780,7 +1780,7 @@ const themeColorEditor = {
 
         if (cell.innerText.includes('do not make this red')) {
             // this variable should not be too reddish
-            const warningSpan = this.createElementAndAdd('span', 'theme-color-editor-warning', null, 'The variable is maybe too reddish', '⚠', null, 'display:none');
+            const warningSpan = this.createElementAndAdd('span', 'tcolor-editor-warning', null, 'The variable is maybe too reddish', '⚠', null, 'display:none');
             cell.insertBefore(warningSpan, cell.firstChild);
             variableInfo.customOnChangeFunction = function () {
                 // warn if color is too reddish
@@ -1792,7 +1792,7 @@ const themeColorEditor = {
         }
         if (variableInfo.name == '--wiki-content-redlink-color') {
             // this variable should be rather red
-            const warningSpan = this.createElementAndAdd('span', 'theme-color-editor-warning', null, 'The variable should be maybe more reddish', '⚠', null, 'display:none');
+            const warningSpan = this.createElementAndAdd('span', 'tcolor-editor-warning', null, 'The variable should be maybe more reddish', '⚠', null, 'display:none');
             cell.insertBefore(warningSpan, cell.firstChild);
             variableInfo.customOnChangeFunction = function () {
                 // warn if color is not reddish enough
@@ -2067,9 +2067,9 @@ const themeColorEditor = {
 
     openPreviewWindow: function (pageName) {
         if (!pageName) {
-            pageName = document.getElementById('theme-color-editor-preview-page-name').value;
+            pageName = document.getElementById('tcolor-editor-preview-page-name').value;
             if (pageName)
-                localStorage.setItem('theme-color-editor-preview-page-name', pageName);
+                localStorage.setItem('tcolor-editor-preview-page-name', pageName);
         }
         if (!pageName) return;
 
@@ -2082,7 +2082,7 @@ const themeColorEditor = {
             return;
         }
 
-        w.addEventListener("DOMContentLoaded", () => {
+        w.addEventListener('DOMContentLoaded', () => {
             this.setBackgroundImageExplicitly(w, getComputedStyle(window.document.body).backgroundImage);
             this.variableInfo.forEach((v) => {
                 // apply current values to preview
@@ -2262,7 +2262,7 @@ const themeColorEditor = {
 };
 
 if (document.readyState === 'loading') {
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener('DOMContentLoaded', () => {
         themeColorEditor.initialize();
     });
 } else {
