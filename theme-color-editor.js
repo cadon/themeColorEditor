@@ -442,15 +442,6 @@ const themeColorEditor = {
             }
         }
 
-        // manual overrides for indirectly defined mix colors
-        ['root', 'view-light', 'view-dark'].forEach(viewName => {
-            const styles = this.baseCss.get(viewName);
-            if (!styles) return;
-            styles.set('--wiki-content-text-mix-color', 'color-mix(in srgb, var(--wiki-content-text-color), var(--wiki-content-background-color))');
-            styles.set('--wiki-content-text-mix-color-95', 'color-mix(in srgb, var(--wiki-content-text-color) 5%, var(--wiki-content-background-color) 95%)');
-        });
-        // manual overrider end
-
         // use view-light and view-dark as base, apply missing root variables
         const rootStyles = this.baseCss.get('root');
         const viewLight = this.baseCss.get('view-light');
