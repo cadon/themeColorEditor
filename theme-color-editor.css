@@ -345,34 +345,9 @@ body {
     min-width: 55px;
 }
 
-.tcolor-editor-contrast-visualizer-circle {
-    height: 16px;
-    width: 16px;
-    border-radius: 50%;
+.tcolor-editor-contrast-visualizer {
     display: inline-block;
-    margin: 0 2px;
-    vertical-align: middle;
-}
-
-.tcolor-editor-contrast-visualizer-circle .tcolor-editor-contrast-visualizer-circle {
-    height: 8px;
-    width: 8px;
-    margin: 4px;
-    vertical-align: top;
-}
-
-.tcolor-editor-contrast-visualizer-circle .tcolor-editor-contrast-visualizer-circle .tcolor-editor-contrast-visualizer-circle {
-    height: 4px;
-    width: 4px;
-    margin: 2px;
-}
-
-.tcolor-editor-contrast-visualizer-square {
-    height: 16px;
-    width: 16px;
-    display: inline-block;
-    margin: 0 2px;
-    vertical-align: middle;
+    font-size: 1.4em;
 }
 
 .tcolor-editor-variable-title {

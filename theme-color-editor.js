@@ -88,12 +88,14 @@ const themeColorEditor = {
      * the initial definition is needed.
      */
     initialBackgroundDefinition: null,
-
     /**
      * collection of base css, key is name (e.g. view-light, view-dark, theme-my-theme-name)
      * value is map of rules (key: var name, value: var value)
      */
     baseCss: undefined,
+    /**
+     * Indicator if the current theme is based on dark view or light view.
+     */
     themeBaseDark: false,
     themeBaseSelector: undefined,
     /**
@@ -1084,6 +1086,31 @@ const themeColorEditor = {
             this.updateIndicatorForAdjustedColor();
         }
 
+        /**
+         * Sets variable according to the passed definition which can have multiple properties.
+         * @param {object} definition 
+         */
+        setValueByDefinition(definition, setSaveExplicitRgb = true) {
+            if (!definition) return;
+            if (definition.light && !themeColorEditor.themeBaseDark) {
+                this.setColor(themeColorEditor.parseColor(definition.light));
+                return;
+            }
+            if (definition.dark && themeColorEditor.themeBaseDark) {
+                this.setColor(themeColorEditor.parseColor(definition.dark));
+                return;
+            }
+            if (!definition.indirect) return;
+
+            this.setValue(definition.indirect);
+            if (setSaveExplicitRgb === true || setSaveExplicitRgb === false)
+                this.saveExplicitRgbInOutput = setSaveExplicitRgb;
+            this.optionInvert = definition.invert != undefined ? !!definition.invert : false;
+            this.optionHueRotate = definition.hueRotate != undefined ? definition.hueRotate : 0;
+            this.optionSaturationFactor = definition.saturationFactor != undefined ? definition.saturationFactor : 1;
+            this.optionLightnessFactor = definition.lightnessFactor != undefined ? definition.lightnessFactor : 1;
+        }
+
         colorChanged(variable) {
             themeColorEditor.updateVariableOnPage(variable);
             if (variable.customOnChangeFunction)
@@ -1173,7 +1200,10 @@ const themeColorEditor = {
 
     ColorPicker: class {
         //rgb = [];
-        //hsvSl = []; // [h, s_hsv, v, s_hsl, l]
+        /**
+         * [h, s_hsv, v, s_hsl, l]
+         */
+        //hsvSl = [];
         //_container;
         //
         //_colorPreviewEl;
@@ -1521,10 +1551,8 @@ const themeColorEditor = {
                             });
                             spanVar.parentElement.insertBefore(contrastVariableInfo.elementResetToBaseColor, spanVar);
 
-                            let contrastVisualizer = this.createElementAndAdd('div', 'tcolor-editor-contrast-visualizer-circle', null, 'contrast visualizer', null, null, 'background-color: var(' + contrastVarName + ')');
-                            spanVar.parentElement.insertBefore(contrastVisualizer, spanVar);
-                            contrastVisualizer = this.createElementAndAdd('div', 'tcolor-editor-contrast-visualizer-circle', contrastVisualizer, null, null, null, 'background-color: var(' + rowVariableName + ')');
-                            this.createElementAndAdd('div', 'tcolor-editor-contrast-visualizer-circle', contrastVisualizer, null, null, null, 'background-color: var(' + contrastVarName + ')');
+                            const cv = this.createElementAndAdd('div', 'tcolor-editor-contrast-visualizer', null, 'contrast visualizer', '◉▩', null, 'color: var(' + contrastVarName + ')');
+                            spanVar.parentElement.insertBefore(cv, spanVar);
 
                             this.addVariableLink(spanVar);
                         }
@@ -1663,7 +1691,7 @@ const themeColorEditor = {
                     return propValue;
                 },
                 set: function (newValue) {
-                    if (propValue === newValue) return;
+                    if (propValue === newValue && propertyName !== 'useIndirectDefinition') return;
                     propValue = newValue;
                     if (el.type === 'checkbox')
                         el.checked = newValue;
@@ -1729,12 +1757,21 @@ const themeColorEditor = {
 
         bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-inline', buttonContainer, 'Tries to fix all the contrast issues of this variable to the colors in the contrast column in this row by changing the lightness of the var ' + colorVariableInfo.name, '◐');
         bt.addEventListener('click', (e) => { this.fixContrastWithLightness(this.variableInfo.get(e.target.parentElement.dataset.varName)); });
-        bt = colorVariableInfo.elementResetToBaseColor = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-inline', buttonContainer, 'reset color', '⭯');
+        bt = colorVariableInfo.elementResetToBaseColor = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-inline', buttonContainer, 'reset color to theme value', '⭯');
         bt.addEventListener('click', (e) => {
             const varInfo = this.variableInfo.get(e.target.parentElement.dataset.varName);
             if (varInfo)
                 varInfo.resetToBase();
         });
+
+        // suggestion button
+        const suggestion = this.variableSuggestions[colorVariableInfo.name];
+        if (suggestion) {
+            bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-inline', buttonContainer, 'set variable to default suggestion: ' + this.createSuggestionInfo(suggestion), '◈');
+            bt.addEventListener('click', () => {
+                colorVariableInfo.setValueByDefinition(suggestion);
+            });
+        }
 
         this.createElementAndAdd('br', null, buttonContainer);
         this.addColorOptionControlAndBind('checkbox', 'use indirect definition',
@@ -1980,6 +2017,10 @@ const themeColorEditor = {
                 varInfo.optionHueRotate = hsvSlTarget[0] - hsvSlSource[0];
                 varInfo.optionSaturationFactor = hsvSlSource[3] > 0 ? hsvSlTarget[3] / hsvSlSource[3] : 1;
                 varInfo.optionLightnessFactor = hsvSlSource[4] > 0 ? hsvSlTarget[4] / hsvSlSource[4] : 1;
+            } else {
+                varInfo.optionHueRotate = 0;
+                varInfo.optionSaturationFactor = 1;
+                varInfo.optionLightnessFactor = 1;
             }
             varInfo.setValue(`var(${variableSource.name})`);
         }
@@ -2095,6 +2136,68 @@ const themeColorEditor = {
         const p = this.previewPopups.find((pi) => !pi.closed);
         if (p)
             localStorage.setItem('theme-creator-popup-rect', `screenX=${p.screenX}, screenY=${p.screenY}, width=${p.innerWidth}, height=${p.innerHeight}`);
+    },
+
+    /**
+     * Default suggestions for variable definitions, e.g. hover being slightly lighter than non-hover.
+     * For a suggestion to be appliable the according variables need to be defined.
+     * The object contains either an explicit color for light and dark view
+     * or an indirect definition with optional adjustments (invert, hueRotate, saturationFactor, lightnessFactor)
+     */
+    variableSuggestions: {
+        '--wiki-body-dynamic-color': { 'light': '#000', 'dark': '#fff' },
+        '--wiki-body-dynamic-color--inverted': { 'indirect': 'var(--wiki-body-dynamic-color)', 'invert': 1 },
+        '--wiki-body-dynamic-color--secondary': { 'light': '#333', 'dark': '#ccc' },
+        '--wiki-body-dynamic-color--secondary--inverted': { 'indirect': 'var(--wiki-body-dynamic-color--secondary)', 'invert': 1 },
+        '--wiki-content-background-color--secondary': { 'indirect': 'var(--wiki-content-background-color)', 'saturationFactor': 0.9 },
+        '--wiki-content-link-color--visited': { 'indirect': 'var(--wiki-content-link-color)' },
+        '--wiki-content-link-color--hover': { 'indirect': 'var(--wiki-content-link-color)' },
+        '--wiki-content-redlink-color': { 'light': '#ba0000', 'dark': '#fc5b4f' },
+        '--wiki-content-text-mix-color': { 'indirect': 'color-mix(in srgb,var(--wiki-content-background-color),var(--wiki-content-text-color) 62%)' },
+        '--wiki-content-text-mix-color-95': { 'indirect': 'color-mix(in srgb,var(--wiki-content-background-color) 95%,var(--wiki-content-text-color))' },
+        '--wiki-content-dynamic-color': { 'light': '#000', 'dark': '#fff' },
+        '--wiki-content-dynamic-color--inverted': { 'indirect': 'var(--wiki-content-dynamic-color)', 'invert': 1 },
+        '--wiki-content-dynamic-color--secondary': { 'light': '#333', 'dark': '#ccc' },
+        '--wiki-content-dynamic-color--secondary--inverted': { 'indirect': 'var(--wiki-content-dynamic-color--secondary)', 'invert': 1 },
+        '--wiki-content-heading-color': { 'indirect': 'var(--wiki-content-text-color)' },
+        '--wiki-accent-color--hover': { 'indirect': 'var(--wiki-accent-color)', 'saturationFactor': 0.9 },
+        '--wiki-sidebar-background-color': { 'indirect': 'var(--wiki-content-background-color)' },
+        '--wiki-sidebar-border-color': { 'indirect': 'var(--wiki-content-border-color)' },
+        '--wiki-sidebar-link-color': { 'indirect': 'var(--wiki-content-link-color)' },
+        '--wiki-sidebar-link-color--hover': { 'indirect': 'var(--wiki-content-link-color--hover)' },
+        '--wiki-sidebar-heading-color': { 'indirect': 'var(--wiki-content-heading-color)' },
+        '--wiki-navigation-background-color': { 'indirect': 'var(--wiki-content-background-color--secondary)' },
+        '--wiki-navigation-background-color--secondary': { 'indirect': 'var(--wiki-content-background-color)' },
+        '--wiki-navigation-border-color': { 'indirect': 'var(--wiki-content-border-color)' },
+        '--wiki-navigation-text-color': { 'indirect': 'var(--wiki-content-link-color)' },
+        '--wiki-navigation-text-color--hover': { 'indirect': 'var(--wiki-content-link-color--hover)' },
+        '--wiki-navigation-selected-background-color': { 'indirect': 'var(--wiki-content-background-color)' },
+        '--wiki-navigation-selected-border-color': { 'indirect': 'var(--wiki-navigation-border-color)' },
+        '--wiki-navigation-selected-text-color': { 'indirect': 'var(--wiki-content-text-color)' },
+        '--wiki-neutral-color': { 'indirect': 'var(--wiki-content-text-mix-color)' }
+    },
+
+    /**
+     * Returns a user readable text of the suggestion.
+     * @param {object} suggestion 
+     */
+    createSuggestionInfo: function (suggestion) {
+        if (suggestion.light || suggestion.dark) {
+            return `light: ${suggestion.light}, dark: ${suggestion.dark}`;
+        }
+        if (!suggestion.indirect) return 'undefined';
+
+        let texts = [];
+        texts.push(suggestion.indirect);
+        if (suggestion.invert != undefined)
+            texts.push(`invert: ${suggestion.invert}`);
+        if (suggestion.hueRotate != undefined)
+            texts.push(`hueRotate: ${suggestion.hueRotate}`);
+        if (suggestion.saturationFactor != undefined)
+            texts.push(`saturationFactor: ${suggestion.saturationFactor}`);
+        if (suggestion.lightnessFactor != undefined)
+            texts.push(`lightnessFactor: ${suggestion.lightnessFactor}`);
+        return texts.join(', ');
     },
 
     /**
