@@ -1482,7 +1482,11 @@ const themeColorEditor = {
                 rowVariableName = cell.innerHTML.trim();
                 cell.innerHTML = '';
                 cell.setAttribute('id', 'var-' + rowVariableName);
-                this.createElementAndAdd('div', 'tcolor-editor-variable-title', cell, null, rowVariableName);
+                const varTitle = this.createElementAndAdd('div', 'tcolor-editor-variable-title tcolor-editor-pointer', cell, 'click to edit', rowVariableName);
+                const varName = rowVariableName;
+                varTitle.addEventListener('click', () => {
+                    this.editColorInColorPicker(varName);
+                });
                 rowVariableNameElement = cell;
             }
 
