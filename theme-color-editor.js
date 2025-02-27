@@ -2216,8 +2216,16 @@ const themeColorEditor = {
 
             let hslIn = this.rgbToHsl(rgbIn);
 
-            // always start from a black color and the two filters: invert(0.5) sepia(1)
+            if (hslIn[2] == 0) {
+                // no light == black, no filter needed
+                return { step: 0, filterString: `none`, error: 0, totalSteps: 0, input: rgbIn };
+            }
+            if (hslIn[1] == 0) {
+                // no saturation, only invert is needed
+                return { step: 0, filterString: `invert(${hslIn[2] / 100})`, error: 0, totalSteps: 0, input: rgbIn };
+            }
 
+            // always start from a black color and the two filters: invert(0.5) sepia(1)
             rgb = this.invert(rgbIn, 0.5);
             rgb = this.sepia(rgb, 1);
             const rgbAfterSepia = rgb;
