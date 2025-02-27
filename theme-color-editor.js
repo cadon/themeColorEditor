@@ -787,7 +787,7 @@ const themeColorEditor = {
         });
         bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divPreview, null, 'preview popup');
         bt.addEventListener('click', () => { this.openPreviewWindow(); });
-        bt = this.createElementAndAdd('button', 'tcolor-editor-button', divPreview, 'set default popup location', 'save loc');
+        bt = this.createElementAndAdd('button', 'tcolor-editor-button', divPreview, 'set default popup screen location and size', 'remember popup loc');
         bt.addEventListener('click', this.saveDefaultPopupLocation);
     },
     //#endregion
