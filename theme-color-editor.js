@@ -79,15 +79,10 @@ const themeColorEditor = {
      */
     exportIncludeExplicitOptions: false,
     /**
-     * references to preview popups where the styles are applied.
+     * References to preview popups where the styles are applied.
+     * Each entry is an object with property w: window, s: style element to adjust the styles
      */
     previewPopups: undefined,
-    /**
-     * Save the background style. For theme adjusting this needs to be an explicit defintion (not a variable)
-     * to avoid flickering when changing other variables in high intervals. If a theme changes the background
-     * the initial definition is needed.
-     */
-    initialBackgroundDefinition: null,
     /**
      * collection of base css, key is name (e.g. view-light, view-dark, theme-my-theme-name)
      * value is map of rules (key: var name, value: var value)
@@ -107,6 +102,11 @@ const themeColorEditor = {
      */
     inOutTextarea: undefined,
 
+    /**
+     * css rule for the applied page styles
+     */
+    pageRules: undefined,
+
     initialize: function () {
         // check if page should display the color editor
         let initializeColorEditor = false;
@@ -123,6 +123,8 @@ const themeColorEditor = {
         }
         if (!initializeColorEditor) return;
 
+        this.pageRules = this.addPreviewStyleElement(document);
+
         // define variables
         this.variableInfo = new Map()
         this.previewPopups = [];
@@ -130,15 +132,30 @@ const themeColorEditor = {
 
         this.addToolbar();
         this.colorPicker = new this.ColorPicker(document.body);
+        this.parseVariables();
         this.parseBaseThemes();
         this.addThemesToSelector();
-        this.parseVariables();
         this.initializeVariables();
+    },
+
+    /**
+     * Creates a style element in the document head where the variable values are stored to be visible.
+     * @param {document} doc 
+     * @returns 
+     */
+    addPreviewStyleElement: function (doc) {
+        //this.createElementAndAdd('style', null, doc.head, null, null, { type: 'text/css' });
+        const styleElement = doc.createElement('style');
+        styleElement.setAttribute('type', 'text/css');
+        styleElement.setAttribute('id', 'tcolor-editor-styles');
+        doc.head.appendChild(styleElement);
+        styleElement.sheet.insertRule(':root {}');
+        return styleElement.sheet.cssRules[0].style;
     },
 
     //#region color parsing
     /**
-     * Parses a color from a string, accepts input like '#ff113a', 'rgb(24, 144, 0)'.
+     * Parses a color from a string, accepts input like '#ff113a', 'rgb(24, 144, 0)', rgba(120, 20, 80, 0.5).
      * @param {string} colorRepresentation 
      * @returns {number[] | null} color as number[], e.g. [24, 144, 0] or null if invalid.
      */
@@ -160,14 +177,19 @@ const themeColorEditor = {
      * @returns {number[] | null} RGB values as an array, or null if parsing fails.
      */
     rgbParenthesisToRgb: function (rgbString) {
-        // parse e.g. rgb(39, 34,102)
-        let rgbMatch = rgbString.match(/(?:rgb\()?(\d+)[\s,]+(\d+)[\s,]+(\d+)\)?/);
-        if (rgbMatch)
-            return rgbMatch.slice(1, 4).map(Number);
-        // parse e.g. color(srgb 0.4, 1, 0.2)
-        rgbMatch = rgbString.match(/color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\)?/);
-        if (rgbMatch)
-            return rgbMatch.slice(1, 4).map(v => Math.round(parseFloat(v) * 255));
+        let rgbMatch = rgbString.match(/(?:rgba?\()?(\d+)[\s,]+(\d+)[\s,]+(\d+)(?:[\s,]+([\d.]+))?\)?/);
+        if (rgbMatch) {
+            const rgb = rgbMatch.slice(1, 4).map(Number);
+            rgb.push(rgbMatch[4] === undefined ? 1 : Number(rgbMatch[4]));
+            return rgb;
+        }
+        // parse e.g. color(srgb 0.4 1 0.2)
+        rgbMatch = rgbString.match(/color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s+\/\s+([\d.]+))?\)?/);
+        if (rgbMatch) {
+            const rgb = rgbMatch.slice(1, 4).map(v => Math.round(parseFloat(v) * 255));
+            rgb.push(rgbMatch[4] === undefined ? 1 : Number(rgbMatch[4]));
+            return rgb;
+        }
 
         console.warn(`couldn't parse color ${rgbString}`);
         return null;
@@ -181,22 +203,23 @@ const themeColorEditor = {
      */
     hexToRgb: function (hexString, logErrors = true) {
         if (!hexString) return null;
-        if (hexString.length == 3) {
+        if (hexString.length == 3 || hexString.length == 4) {
             // convert 3-digit hex to 6-digit hex ("rgb" -> "rrggbb")
             hexString = hexString.split('').map(c => c + c).join('');
         }
 
         // ensure it's a valid hex color code
-        if (!/^([\da-fA-F]{6})$/.test(hexString)) {
+        if (!/^[\dA-Fa-f]{6}(?:[\dA-Fa-f]{2})?$/.test(hexString)) {
             if (logErrors)
-                console.warn(`Invalid hex color format: ${hexString}. Use rrggbb format.`);
+                console.warn(`Invalid hex color format: ${hexString}. Use rgb, rrggbb, rgba or rrggbbaa format.`);
             return null;
         }
 
         return [
             parseInt(hexString.slice(0, 2), 16),
             parseInt(hexString.slice(2, 4), 16),
-            parseInt(hexString.slice(4, 6), 16)
+            parseInt(hexString.slice(4, 6), 16),
+            hexString.length == 8 ? parseInt(hexString.slice(6, 8), 16) / 255 : 1
         ];
     },
 
@@ -208,12 +231,13 @@ const themeColorEditor = {
      * @returns {string} hex string
      */
     rgbToHexString: function (rgb, prependHash = true) {
-        if (!rgb || rgb.length != 3) return null;
-        return (prependHash ? '#' : '') + rgb.reduce((result, color) => result + color.toString(16).padStart(2, '0'), '');
+        if (!rgb || rgb.length < 3) return null;
+        const alphaPart = rgb.length == 4 && rgb[3] < 1 ? Math.round(rgb[3] * 255).toString(16).padStart(2, '0') : '';
+        return (prependHash ? '#' : '') + rgb.slice(0, 3).reduce((result, color) => result + color.toString(16).padStart(2, '0'), '') + alphaPart;
     },
 
     /**
-     * Converts an rgb array to a comma separated string, used for the --rgb variables.
+     * Converts an rgb array to a comma separated string, used for the --rgb variables. Ignores alpha.
      * @param {byte[]} rgb
      * @returns {string} 
      */
@@ -222,27 +246,27 @@ const themeColorEditor = {
         return `${rgb[0]},${rgb[1]},${rgb[2]}`
     },
 
-    hsvToRgb: function ([h, s, v]) {
+    hsvToRgb: function ([h, s, v], alpha = 1) {
         let f = (n) => {
             let k = (n + h / 60) % 6;
             return Math.round(v * (1 - s * Math.max(Math.min(k, 4 - k, 1), 0)) * 255);
         };
         s /= 100;
         v /= 100;
-        return [f(5), f(3), f(1)];
+        return [f(5), f(3), f(1), alpha];
     },
 
     /**
      * h [0,360], s [0,100], l [0,100]
      */
-    hslToRgb: function ([h, s, l]) {
+    hslToRgb: function ([h, s, l], alpha = 1) {
         let f = (n) => {
             let k = (n + h / 30) % 12;
             return Math.round((l - s * Math.min(l, 1 - l) * Math.max(Math.min(k - 3, 9 - k, 1), -1)) * 255);
         };
         s /= 100;
         l /= 100;
-        return [f(0), f(8), f(4)];
+        return [f(0), f(8), f(4), alpha];
     },
 
     /**
@@ -293,7 +317,7 @@ const themeColorEditor = {
      */
     mixColors: function (rgbColors, mixFractions) {
         if (!rgbColors) return [0, 0, 0];
-        const mixedColor = [0, 0, 0];
+        const mixedColor = [0, 0, 0, 0];
         let weightingSum = 0;
 
         for (let i = 0; i < rgbColors.length; i++) {
@@ -305,11 +329,13 @@ const themeColorEditor = {
             mixedColor[0] += addColorRgb[0] * weight;
             mixedColor[1] += addColorRgb[1] * weight;
             mixedColor[2] += addColorRgb[2] * weight;
+            mixedColor[3] += addColorRgb[3] * weight;
         }
         if (weightingSum == 0) return [0, 0, 0];
         mixedColor[0] = Math.round(mixedColor[0] / weightingSum);
         mixedColor[1] = Math.round(mixedColor[1] / weightingSum);
         mixedColor[2] = Math.round(mixedColor[2] / weightingSum);
+        mixedColor[3] = mixedColor[3] / weightingSum;
 
         return mixedColor;
     },
@@ -320,7 +346,7 @@ const themeColorEditor = {
      */
     invertedColor: function (rgb) {
         if (!rgb) return null;
-        return [255 - rgb[0], 255 - rgb[1], 255 - rgb[2]];
+        return [255 - rgb[0], 255 - rgb[1], 255 - rgb[2], rgb[3]];
     },
 
     /**
@@ -337,7 +363,8 @@ const themeColorEditor = {
         return [
             Math.round(rgb[0] + amount * (255 - 2 * rgb[0])),
             Math.round(rgb[1] + amount * (255 - 2 * rgb[1])),
-            Math.round(rgb[2] + amount * (255 - 2 * rgb[2]))
+            Math.round(rgb[2] + amount * (255 - 2 * rgb[2])),
+            rgb[3]
         ];
     },
 
@@ -350,7 +377,7 @@ const themeColorEditor = {
         if (!rgb) return null;
         if (!hueRotate) return rgb;
         const hsvsl = this.rgbToHsvSl(rgb);
-        return this.hslToRgb([hsvsl[0] + hueRotate, hsvsl[3], hsvsl[4]]);
+        return this.hslToRgb([hsvsl[0] + hueRotate, hsvsl[3], hsvsl[4]], rgb[3]);
     },
 
     /**
@@ -363,11 +390,14 @@ const themeColorEditor = {
     adjustHsl: function (rgb, hueRotate = 0, saturationFactor = 1, lightnessFactor = 1) {
         if (!rgb) return null;
         const hsvsl = this.rgbToHsvSl(rgb);
-        return this.hslToRgb([
-            hsvsl[0] + (hueRotate === undefined ? 0 : hueRotate),
-            saturationFactor === undefined ? hsvsl[3] : Math.min(100, Math.max(0, hsvsl[3] * saturationFactor)),
-            lightnessFactor === undefined ? hsvsl[4] : Math.min(100, Math.max(0, hsvsl[4] * lightnessFactor))
-        ]);
+        return this.hslToRgb(
+            [
+                hsvsl[0] + (hueRotate === undefined ? 0 : hueRotate),
+                saturationFactor === undefined ? hsvsl[3] : Math.min(100, Math.max(0, hsvsl[3] * saturationFactor)),
+                lightnessFactor === undefined ? hsvsl[4] : Math.min(100, Math.max(0, hsvsl[4] * lightnessFactor))
+            ],
+            rgb[3]
+        );
     },
 
     /**
@@ -377,7 +407,7 @@ const themeColorEditor = {
     inverseLightnessOfColor: function (rgb) {
         if (!rgb) return null;
         const hsvsl = this.rgbToHsvSl(rgb);
-        return this.hslToRgb([hsvsl[0], hsvsl[3], 100 - hsvsl[4]]);
+        return this.hslToRgb([hsvsl[0], hsvsl[3], 100 - hsvsl[4]], rgb[3]);
     },
 
     /**
@@ -390,7 +420,7 @@ const themeColorEditor = {
     },
 
     /**
-     * Returns true if the first 3 elements of the arrays are equal.
+     * Returns true if the first 4 elements of the arrays are equal.
      * @param {number[]} rgb1 
      * @param {number[]} rgb2
      */
@@ -399,7 +429,8 @@ const themeColorEditor = {
         if (!rgb1 || !rgb2) return false;
         return rgb1[0] == rgb2[0]
             && rgb1[1] == rgb2[1]
-            && rgb1[2] == rgb2[2];
+            && rgb1[2] == rgb2[2]
+            && rgb1[3] == rgb2[3];
     },
     //#endregion
 
@@ -419,13 +450,18 @@ const themeColorEditor = {
                     selectors.forEach((s) => {
                         let selectorName = s.trim();
                         if (!selectorName
-                            || (selectorName != ':root'
-                                && selectorName != '.view-light'
-                                && selectorName != '.view-dark'
+                            || (selectorName !== ':root'
+                                && selectorName !== 'html'
+                                && selectorName !== '.view-light'
+                                && selectorName !== '.view-dark'
                                 && !selectorName.startsWith('.theme-'))
                         ) return;
 
-                        selectorName = selectorName.substring(1);
+                        if (selectorName === 'html')
+                            selectorName = 'root';
+                        else
+                            selectorName = selectorName.substring(1); // remove colon or dot
+
                         if (!this.baseCss.has(selectorName))
                             this.baseCss.set(selectorName, new Map());
                         const ruleProperties = this.baseCss.get(selectorName);
@@ -433,7 +469,9 @@ const themeColorEditor = {
                         const ruleCount = rule.style.length;
                         for (let i = 0; i < ruleCount; i++) {
                             const propName = rule.style[i];
-                            if (propName.startsWith('--wiki')) {
+                            const propNameWithOutRgb = propName.endsWith('--rgb') ? propName.substring(0, propName.length - 5) : undefined;
+                            if (this.variableInfo.has(propName)
+                                || (propNameWithOutRgb && this.variableInfo.has(propNameWithOutRgb))) {
                                 ruleProperties.set(propName, rule.style.getPropertyValue(propName).trim());
                             }
                         }
@@ -455,7 +493,7 @@ const themeColorEditor = {
             if (viewDark && !viewDark.has(k)) {
                 viewDark.set(k, v);
             }
-        })
+        });
     },
 
     /**
@@ -472,22 +510,20 @@ const themeColorEditor = {
     /**
      * Sets all variables to the values of a preset theme.
      * @param {string} themeName 
+     * @returns {boolean} whether the theme could be applied.
      */
     applyTheme: function (themeName) {
-        if (!this.initialBackgroundDefinition) {
-            this.initialBackgroundDefinition = document.body.style.backgroundImage;
-        }
+        //console.log(`applying variable values of theme or view: ${themeName}`);
 
         // first set light or dark base values
         if (themeName != 'root' && themeName != 'view-light' && themeName != 'view-dark')
-            this.applyTheme(this.themeBaseDark ? 'view-dark' : 'view-light'); // view-light is equal to root
+            this.applyTheme(this.themeBaseDark ? 'view-dark' : 'view-light');
 
-        if (!themeName) return;
-        //console.log(`applying variable values of theme: ${themeName}`);
+        if (!themeName) return false;
         const theme = this.baseCss.get(themeName);
         if (!theme) {
-            console.warn(`ERROR: no theme with name "${themeName}" found to apply.`);
-            return;
+            console.warn(`no theme with name "${themeName}" found to apply.`);
+            return false;
         }
         const setAsBaseValues = themeName === 'root' || themeName === 'view-light' || themeName === 'view-dark';
         theme.forEach((v, k) => {
@@ -496,22 +532,18 @@ const themeColorEditor = {
                 varInfo.setValue(v, setAsBaseValues);
         });
 
-        // apply initial definition for the background in the case it's changed in this theme
-        document.body.style.backgroundImage = this.initialBackgroundDefinition;
-        const bg = getComputedStyle(document.body).backgroundImage;
-        this.setBackgroundImageExplicitly(window, bg);
-        this.previewPopups.forEach((p) => { this.setBackgroundImageExplicitly(p, bg); });
+        this.setBackgroundImageExplicitly();
     },
 
     /**
-     * Applies the base values of a view. This has an effect on if a variable is saved or not, if it's equal to its base.
+     * Applies the base values of a view, i.e. it does not change the set values, only the value a variable can be reset to. This has an effect on if a variable is saved or not, if it's equal to its base.
      * @param {string} viewName view-light or view-dark
      */
-    applyBaseTheme: function (viewName) {
+    applyThemeAsBase: function (viewName) {
         if (viewName != 'view-light' && viewName != 'view-dark') return;
         const theme = this.baseCss.get(viewName);
         if (!theme) {
-            console.warn(`ERROR: no view with name "${viewName}" found to apply.`);
+            console.warn(`no view with name "${viewName}" found to apply.`);
             return;
         }
 
@@ -521,10 +553,79 @@ const themeColorEditor = {
                 varInfo.setBaseValue(v);
         });
 
-        // apply initial definition for the background in the case it's changed in this theme
-        document.body.style.backgroundImage = this.initialBackgroundDefinition;
-        const bg = getComputedStyle(document.body).backgroundImage;
-        this.setBackgroundImageExplicitly(window, bg);
+        this.setBackgroundImageExplicitly();
+    },
+
+    /**
+     * Reads the variable values of the currently selected theme by the wiki theme-selector
+     * and applies the variable values to the editor variables.
+     */
+    applyValuesOfCurrentPageTheme() {
+        // get styles of theme selector
+        const themeStyleEl = document.getElementById('mw-themetoggle-styleref');
+        if (!themeStyleEl) {
+            console.warn('theme selector style element with id mw-themetoggle-styleref not found. Cannot apply theme selector styles.');
+            return;
+        }
+
+        const sheetRules = themeStyleEl.sheet.cssRules;
+        if (!sheetRules) {
+            console.warn('theme selector styles not found in (mw-themetoggle-styleref).sheet.cssRules not found. Cannot apply theme selector styles.');
+            return;
+        }
+
+        // clear editor style element so current wiki theme styles are valid and can be read
+        const tceStylesElement = document.getElementById('tcolor-editor-styles');
+        if (tceStylesElement && tceStylesElement.sheet.length > 0)
+            tceStylesElement.sheet.deleteRule(0);
+
+        const sheetRulesArray = [];
+        for (let i = 0; i < sheetRules.length; i++) {
+            const sr = sheetRules[i];
+            if (sr.selectorText && (sr.selectorText.includes(':root') || sr.selectorText.includes('html')))
+                sheetRulesArray.push(sr);
+        }
+
+        // first collect values without updating it
+        const varValues = new Map();
+        this.variableInfo.forEach(v => {
+            let varValue = '';
+            sheetRulesArray.forEach(sr => {
+                const varValueRule = sr.style.getPropertyValue(v.name);
+                if (varValueRule) varValue = varValueRule;
+            });
+            if (varValue)
+                varValues.set(v.name, varValue);
+        });
+
+        if (varValues.length == 0) {
+            console.warn('the theme selector element with id mw-themetoggle-styleref did not contain any values for the used variables.');
+            return;
+        }
+
+        if (tceStylesElement) {
+            // When selecting a theme of an external file, a new head element may be added where the styles are loaded.
+            // Make sure the styles of this editor are the last style element.
+            document.head.appendChild(tceStylesElement);
+            tceStylesElement.sheet.insertRule(':root {}'); // re add previously deleted rule
+            this.pageRules = tceStylesElement.sheet.cssRules[0].style;
+        }
+        this.previewPopups.forEach(p => {
+            const styleElement = p.w.document.getElementById('tcolor-editor-styles');
+            if (styleElement)
+                styleElement.remove();
+            p.s = this.addPreviewStyleElement(p.w.document);
+        });
+
+        // update variable values
+        this.variableInfo.forEach(v => {
+            const varValue = varValues.get(v.name);
+            if (varValue)
+                v.setValue(varValue);
+        });
+
+        // update background if it was changed by the theme
+        this.setBackgroundImageExplicitly();
     },
 
     /**
@@ -534,9 +635,15 @@ const themeColorEditor = {
      * @param {window} win 
      * @param {string} backgroundStyle 
      */
-    setBackgroundImageExplicitly: function (win, backgroundStyle) {
-        if (backgroundStyle)
-            win.document.body.style.backgroundImage = backgroundStyle;
+    setBackgroundImageExplicitly: function () {
+        document.body.style.removeProperty('background'); // remove previously explicitly set property
+        const computedBodyBackground = getComputedStyle(document.body).background;
+        if (computedBodyBackground.includes('url')) {
+            document.body.style.setProperty('background', computedBodyBackground);
+            this.previewPopups.forEach((p) => p.w.document.body.style.setProperty('background', computedBodyBackground));
+        } else {
+            this.previewPopups.forEach((p) => p.w.document.body.style.removeProperty('background'));
+        }
     },
 
     invertAllLightness: function (useLuminance = false) {
@@ -713,7 +820,7 @@ const themeColorEditor = {
         let timerId;
         return (...args) => {
             clearTimeout(timerId);
-            timerId = setTimeout(() => { functionToDebounce.apply(this, args); }, waitFor);
+            timerId = setTimeout(() => functionToDebounce.apply(this, args), waitFor);
         }
     },
     //#endregion
@@ -727,10 +834,12 @@ const themeColorEditor = {
         // adjust global lightness
         const divTools = this.createElementAndAdd('div', 'tcolor-editor-groupbox', toolBarElement);
         this.createElementAndAdd('span', 'tcolor-editor-groupbox-heading', divTools, null, 'global color tools');
-        let bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divTools, 'Inverts the luminance of all colors (switching dark <-> light)\nThe effect might be unexpected.', 'invert all color\'s luminance');
-        bt.addEventListener('click', () => { this.invertAllLightness(true) });
-        bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divTools, 'Inverts the lightness of all colors (switching dark <-> light)\nAlso consider to use the "rebase" button to use the according view as base (light / dark).', 'invert all color\'s lightness');
-        bt.addEventListener('click', () => { this.invertAllLightness() });
+        let bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divTools,
+            'Inverts the luminance of all colors (switching dark <-> light)\nThe effect might be unexpected.', 'invert all color\'s luminance');
+        bt.addEventListener('click', () => this.invertAllLightness(true));
+        bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divTools,
+            'Inverts the lightness of all colors (switching dark <-> light)\nAlso consider to use the "rebase" button to use the according view as base (light / dark).', 'invert all color\'s lightness');
+        bt.addEventListener('click', () => this.invertAllLightness());
 
         // theme loader
         const divThemeSelector = this.createElementAndAdd('div', 'tcolor-editor-groupbox', toolBarElement);
@@ -739,12 +848,16 @@ const themeColorEditor = {
             (e) => { this.themeBaseDark = e.target.checked; e.target.nextSibling.nodeValue = e.target.checked ? 'view-dark' : 'view-light'; },
             'view the theme is based on', true));
         this.themeBaseSelector = this.createElementAndAdd('select', null, divThemeSelector);
-        bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divThemeSelector, 'Sets all variables to the values of a preset view (light/dark) and theme.', 'load theme variables');
-        bt.addEventListener('click', () => { this.applyTheme(this.themeBaseSelector.options[this.themeBaseSelector.selectedIndex].text); });
+        bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divThemeSelector,
+            'Sets all variables to the values of a preset view (light/dark) and theme.', 'load theme variables');
+        bt.addEventListener('click', () => this.applyTheme(this.themeBaseSelector.options[this.themeBaseSelector.selectedIndex].text));
         bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divThemeSelector,
             'Sets all base values of the variables to the selected view (light or dark).\nThis has an effect whether a variable will be in the output or not (variables equal to their base value of the view won\'t be included)',
             'rebase variables');
-        bt.addEventListener('click', () => { this.applyBaseTheme(this.themeBaseDark ? 'view-dark' : 'view-light'); });
+        bt.addEventListener('click', () => this.applyThemeAsBase(this.themeBaseDark ? 'view-dark' : 'view-light'));
+        bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divThemeSelector,
+            'Load all variables of the currently selected theme.\nIt is recommended to do this after loading a theme with the theme-selector that is saved in an extra file.\nThis will not reset initially indirect defined values.\nTo do this consider loading a base view (light or dark) first.', 'load current theme variables');
+        bt.addEventListener('click', () => this.applyValuesOfCurrentPageTheme());
 
         // import export
         const divImportExport = this.createElementAndAdd('div', 'tcolor-editor-groupbox', toolBarElement);
@@ -752,18 +865,19 @@ const themeColorEditor = {
         divImportExport.appendChild(this.createCheckbox('include --rgb',
             (e) => { this.exportIncludeRgbVariants = e.target.checked; },
             'Include --rgb color variables for variables that have them.'));
+        this.createElementAndAdd('br', null, divImportExport);
         divImportExport.appendChild(this.createCheckbox('include explicit adjustments',
             (e) => { this.exportIncludeExplicitOptions = e.target.checked; },
             'Include color options set for explicit color adjustments (e.g. invert, hue-rotate).\nThis should be only enabled if you want to save your work and import later.\nThis should not be enabled to export the css for use on a wiki.'));
         const inOutButton = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divImportExport, null, 'input output view toggle');
-        inOutButton.addEventListener('click', () => { this.inOutStyleSheetEl.classList.toggle('transition-hide'); });
+        inOutButton.addEventListener('click', () => this.inOutStyleSheetEl.classList.toggle('transition-hide'));
         bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divImportExport, null, 'copy styles to clipboard');
-        bt.addEventListener('click', () => { navigator.clipboard.writeText(this.exportStyles(true)); });
+        bt.addEventListener('click', () => navigator.clipboard.writeText(this.exportStyles(true)));
         // in out element
         this.inOutStyleSheetEl = this.createElementAndAdd('div', 'tcolor-editor-control tcolor-editor-center-popup transition-show transition-hide', document.body);
         this.createElementAndAdd('div', null, this.inOutStyleSheetEl, null, 'css import/export');
         bt = this.createElementAndAdd('div', 'tcolor-editor-close-button', this.inOutStyleSheetEl, null, '×');
-        bt.addEventListener('click', (e) => { e.target.parentElement.classList.toggle('transition-hide', true) });
+        bt.addEventListener('click', (e) => e.target.parentElement.classList.toggle('transition-hide', true));
         this.inOutTextarea = this.createElementAndAdd('textarea', null, this.inOutStyleSheetEl, null, null, { 'rows': '20', 'cols': '106' });
         const buttonContainer = this.createElementAndAdd('div', null, this.inOutStyleSheetEl);
         const btImportLight = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-button-light tcolor-editor-inline', buttonContainer, null, '↷import with light-view as base');
@@ -786,9 +900,38 @@ const themeColorEditor = {
             if (e.key === 'Enter') this.openPreviewWindow();
         });
         bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divPreview, null, 'preview popup');
-        bt.addEventListener('click', () => { this.openPreviewWindow(); });
+        bt.addEventListener('click', () => this.openPreviewWindow());
         bt = this.createElementAndAdd('button', 'tcolor-editor-button', divPreview, 'set default popup screen location and size', 'remember popup loc');
-        bt.addEventListener('click', this.saveDefaultPopupLocation);
+        bt.addEventListener('click', () => this.saveDefaultPopupLocation());
+
+        // shortManual
+        const shortManual = this.createElementAndAdd('div', 'tcolor-editor-control tcolor-editor-center-popup transition-show transition-hide', document.body);
+        bt = this.createElementAndAdd('div', 'tcolor-editor-close-button', shortManual, null, '×');
+        bt.addEventListener('click', (e) => e.target.parentElement.classList.toggle('transition-hide', true));
+        const manualButton = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', toolBarElement, 'toggle display of short manual', '?', null, 'align-self: flex-start;');
+        manualButton.addEventListener('click', () => shortManual.classList.toggle('transition-hide'));
+        this.createElementAndAdd('div', null, shortManual, null, `<h2>Short Manual</h2>
+        <ul>
+            <li>if themes all saved in common.css</li>
+            <ul>
+                <li>In toolbar toggle to light or dark view</li>
+                <li>In toolbar select and load theme the new theme is based on</li>
+            </ul>
+            <li>if themes saved in separate files</li>
+            <ul>
+                <li>In toolbar toggle to light or dark view</li>
+                <li>In theme-selector (top right) select theme the new theme is based on</li>
+            </ul>
+            <li>Adjust colors by clicking on them, make sure contrasts are fulfilled</li>
+            <li>Make use of indirect definitions to simplify color adjustments (export indirect definitions by enabling &quot;include explicit adjustments&quot;)</li>
+            <li>Export theme to save in common.css or theme-page</li>
+            <ul>
+                <li>if wiki styling uses --rgb variables, make sure to enable the checkbox</li>
+                <li>if indirect definitions should be exported, enable &quot;include explicit adjustments&quot; checkbox.<br/>Enable that only for saving a theme for later, this option should be disabled when saving for wiki styles.</li>
+                <li>export themes directly to clipboard via button or view in export window</li>
+            </ul>
+        </ul>
+            `);
     },
     //#endregion
 
@@ -856,10 +999,19 @@ const themeColorEditor = {
          * @param {boolean} alsoSetAsBase 
          */
         setIndirectDefition(v, alsoSetAsBase = false) {
+            const useIndirectDefinition = !!v;
+            // if the indirectDefinition should be updated and this.useIndirectDefinition is already true
+            // trigger the update manually (the property won't be changed in this case and the updating is not triggered)
+            const updateValueFromDefinition = useIndirectDefinition && this.useIndirectDefinition && this._indirectDefinition !== v;
+            this.dependsOnVarsEl.value = useIndirectDefinition ? v : '';
+            this.useIndirectDefinition = useIndirectDefinition;
             this._indirectDefinition = v;
-            this.dependsOnVarsEl.value = v ? v : '';
-            this.useIndirectDefinition = !!v;
-            if (v)
+            if (updateValueFromDefinition) {
+                this.enableIndirectDefinition(true);
+                this.updateDependencyVariables();
+                this.updateValueFromAffectors();
+            }
+            if (useIndirectDefinition)
                 this.setColor(this.getCalculatedColorRgb(), alsoSetAsBase, true);
         }
 
@@ -971,7 +1123,7 @@ const themeColorEditor = {
         /**
          * button to reset this color to the base definition
          */
-        //elementResetToBaseColor;
+        //elementResetToBaseValue;
 
         /**
          * 
@@ -1122,13 +1274,13 @@ const themeColorEditor = {
             const colorEqualToBase = colorIsEqualToBase === true || !this.valueShouldGoInOutput();
             if (colorEqualToBase) {
                 this.elementEqualToBaseColor.style.backgroundColor = '';
-                this.elementEqualToBaseColor.title = `This color is equal to the base style.\nThe variable will not be included in the output.\nThis color: rgb(${this.rgb}), ${themeColorEditor.rgbToHexString(this.rgb)}`;
+                this.elementEqualToBaseColor.title = `This color is equal to the base style.\nThe variable will not be included in the output.\nThis color: rgb(${this.rgb[3] == 1 ? this.rgb.slice(0, 3) : this.rgb}), ${themeColorEditor.rgbToHexString(this.rgb)}`;
             } else {
                 this.elementEqualToBaseColor.style.backgroundColor = '#ffff41';
-                this.elementEqualToBaseColor.title = `This color is different to the base style.\nThe variable will be included in the output.\nThis color: rgb(${this.rgb}), ${themeColorEditor.rgbToHexString(this.rgb)}\nBase color: rgb(${this.baseColor}), ${themeColorEditor.rgbToHexString(this.baseColor)}`;
+                this.elementEqualToBaseColor.title = `This color is different to the base style.\nThe variable will be included in the output.\nThis color: rgb(${this.rgb[3] == 1 ? this.rgb.slice(0, 3) : this.rgb}), ${themeColorEditor.rgbToHexString(this.rgb)}\nBase color: rgb(${this.baseColor}), ${themeColorEditor.rgbToHexString(this.baseColor)}`;
             }
 
-            this.elementResetToBaseColor.style.visibility = colorEqualToBase ? 'hidden' : 'visible';
+            this.elementResetToBaseValue.style.visibility = colorEqualToBase ? 'hidden' : 'visible';
         }
     },
 
@@ -1145,7 +1297,7 @@ const themeColorEditor = {
         //contrast;
         //contrastDisplayElement;
         //minContrast;
-        //elementResetToBaseColor;
+        //elementResetToBaseValue;
 
         constructor(variableName, contrastDisplayElement) {
             // simulate two different constructors by checking the types
@@ -1169,12 +1321,17 @@ const themeColorEditor = {
          */
         UpdateContrast(rgb = null) {
             if (!this.variable) return;
+            if (!this.variable.rgb) {
+                console.warn(`variable ${this.variable.name} has no rgb`);
+                return;
+            }
             if (rgb) {
                 this.contrastColorRgb = [...rgb];
             }
+
             this.contrast = themeColorEditor.colorContrast(this.variable.rgb, this.contrastColorRgb);
             if (this.contrast === undefined || this.contrastDisplayElement === null) return;
-            this.contrastDisplayElement.innerHTML = (Math.floor(this.contrast * 10) / 10) + '<small>:1</small>';
+            this.contrastDisplayElement.innerHTML = (Math.floor(this.contrast * 10) / 10).toFixed(1) + '<small>:1</small>';
             const sufficientContrast = this.contrast >= this.minContrast;
             if (sufficientContrast) {
                 this.contrastDisplayElement.classList.toggle('bad-contrast', false);
@@ -1187,14 +1344,15 @@ const themeColorEditor = {
                 this.contrastDisplayElement.classList.toggle('bad-contrast', true);
                 this.contrastDisplayElement.classList.toggle('insufficient-contrast', false);
             }
-            this.contrastDisplayElement.setAttribute('title', (sufficientContrast ? 'sufficient contrast' : 'contrast not sufficient') + `, needed contrast is at least ${this.minContrast}:1`);
+            const alphaContrastRestriction = this.variable.rgb[3] < 1 || this.contrastColorRgb[3] < 1 ? '\nThe colors have reduced alpha. The contrast indicator tries to approximate the effect of that, but the exact effect depends on the context where the color is used.\nThe displayed contrast ratio may not be correct.' : '';
+            this.contrastDisplayElement.setAttribute('title', (sufficientContrast ? 'sufficient contrast' : 'contrast not sufficient') + `, needed contrast is at least ${this.minContrast}:1${alphaContrastRestriction}`);
 
-            const buttonFixContrast = this.contrastDisplayElement.nextSibling;
+            const buttonFixContrast = this.elementFixContrast;
             buttonFixContrast.style.visibility = sufficientContrast ? 'hidden' : 'visible';
             buttonFixContrast.classList.toggle('contrast-color-indirectly-defined', this.variable.useIndirectDefinition);
             buttonFixContrast.setAttribute('title', 'Tries to fix the contrast issues by changing the lightness of the variable ' + this.variable.name + (this.variable.useIndirectDefinition ? '\nCaution! This variable is indirectly defined. Using this button will save the color explicitly.' : ''));
 
-            this.elementResetToBaseColor.style.visibility = themeColorEditor.rgbEqual(this.variable.rgb, this.variable.baseColor) ? 'hidden' : 'visible';
+            this.elementResetToBaseValue.style.visibility = themeColorEditor.rgbEqual(this.variable.rgb, this.variable.baseColor) ? 'hidden' : 'visible';
         }
     },
 
@@ -1215,6 +1373,7 @@ const themeColorEditor = {
         //_rSlider;
         //_gSlider;
         //_bSlider;
+        //_aSlider;
         //_hInput;
         //_sHsvInput;
         //_vInput;
@@ -1223,6 +1382,7 @@ const themeColorEditor = {
         //_rInput;
         //_gInput;
         //_bInput;
+        //_aInput;
         //_titleTextEl;
         //_hexInputEl;
         //_currentColorVariable;
@@ -1232,7 +1392,7 @@ const themeColorEditor = {
             this.updatePreviewThrottled = themeColorEditor.throttle(() => {
                 if (!this.rgb || isNaN(this.rgb[0])) return;
 
-                this._colorPreviewEl.style.backgroundColor = themeColorEditor.rgbToHexString(this.rgb);
+                this._colorPreviewEl.style.background = themeColorEditor.rgbToHexString(this.rgb);
 
                 // calculate min max values for slider background linear-gradients
                 const colorSHsvMin = themeColorEditor.hsvToRgb([this.hsvSl[0], 0, this.hsvSl[2]]);
@@ -1240,7 +1400,7 @@ const themeColorEditor = {
                 const colorVMin = themeColorEditor.hsvToRgb([this.hsvSl[0], this.hsvSl[1], 0]);
                 const colorVMax = themeColorEditor.hsvToRgb([this.hsvSl[0], this.hsvSl[1], 100]);
 
-                const rgbString = themeColorEditor.rgbToHexString(this.rgb);
+                const rgbString = themeColorEditor.rgbToHexString(this.rgb.slice(0, 3)); // ignore alpha
                 // hsv
                 this._sHsvSlider.style.background = `linear-gradient(to right, rgb(${[...colorSHsvMin]}), rgb(${[...colorSHsvMax]}))`;
                 this._vSlider.style.background = `linear-gradient(to right, rgb(${[...colorVMin]}), rgb(${[...colorVMax]}))`;
@@ -1263,6 +1423,12 @@ const themeColorEditor = {
                 this._bSlider.style.background = `linear-gradient(to right, rgb(${this.rgb[0]}, ${this.rgb[1]}, 0), rgb(${this.rgb[0]}, ${this.rgb[1]}, 255))`;
                 this._bSlider.style.setProperty('--custom-slider-background-color', `rgb(0, 0, ${this.rgb[2]})`);
 
+                // alpha
+                this._aSlider.style.background = `linear-gradient(to right, transparent, rgb(${this.rgb[0]}, ${this.rgb[1]}, ${this.rgb[2]})), repeating-conic-gradient(#777 0% 25%, white 0% 50%) center/10px 10px`;
+                const alpha = this.rgb[3];
+                if (alpha === undefined) console.warn(`no alpha when updating alpha controls`);
+                this._aSlider.style.setProperty('--custom-slider-background-color', `rgb(${Math.round(this.rgb[0] * alpha + 255 * (1 - alpha))}, ${Math.round(this.rgb[1] * alpha + 255 * (1 - alpha))}, ${Math.round(this.rgb[2] * alpha + 255 * (1 - alpha))})`);
+
                 if (document.activeElement != this._hexInputEl)
                     this._hexInputEl.value = themeColorEditor.rgbToHexString(this.rgb, false);
 
@@ -1276,12 +1442,13 @@ const themeColorEditor = {
             let bt = themeColorEditor.createElementAndAdd('div', 'tcolor-editor-close-button', this._container, null, '×');
             bt.addEventListener('click', () => { themeColorEditor.editColorInColorPicker(null) });
             this._titleTextEl = themeColorEditor.createElementAndAdd('div', null, this._container, null, null, { 'id': 'color-picker-title' }, 'margin: 0.4rem;');
-            this._colorPreviewEl = themeColorEditor.createElementAndAdd('div', null, this._container, null, null, { 'id': 'color-preview' }, 'height: 50px; border: 1px solid #000; border-radius: 5px;');
+            const colorPreviewContainer = themeColorEditor.createElementAndAdd('div', null, this._container, null, null, null, 'height: 50px; border: 1px solid #000; border-radius: 5px; background: repeating-conic-gradient(#777 0% 25%, white 0% 50%) center/10px 10px');
+            this._colorPreviewEl = themeColorEditor.createElementAndAdd('div', null, colorPreviewContainer, null, null, { 'id': 'color-preview' }, 'height: 100%; border-radius: 5px;');
 
             // hex input and slider toggle
             const hexFrame = themeColorEditor.createElementAndAdd('div', 'color-picker-frame', this._container);
             const lbHexInput = themeColorEditor.createElementAndAdd('label', null, hexFrame, null, '# ');
-            this._hexInputEl = themeColorEditor.createElementAndAdd('input', null, lbHexInput, null, null, { 'type': 'text', 'pattern': '[\\da-fA-F]{3,6}', 'minlength': '3', 'maxlength': '6', 'size': '6' });
+            this._hexInputEl = themeColorEditor.createElementAndAdd('input', null, lbHexInput, null, null, { 'type': 'text', 'pattern': '[\\da-fA-F]{3,8}', 'minlength': '3', 'maxlength': '8', 'size': '8' });
             this._hexInputEl.addEventListener('input', (e) => this.setColorAndSetControls(themeColorEditor.hexToRgb(e.target.value, false)));
 
             // view toggle checkboxes
@@ -1310,13 +1477,18 @@ const themeColorEditor = {
             addSliderToggleCheckBox('hsv', ['s_hsv', 'v']);
             addSliderToggleCheckBox('hsl', ['s_hsl', 'l']);
             addSliderToggleCheckBox('rgb', ['r', 'g', 'b']);
+            addSliderToggleCheckBox('alpha', ['a']);
 
             // slider
-            function addColorSlider(container, name, id, updateCallback, max, min = 0, styleRange = null) {
+            function addColorSlider(container, name, id, updateCallback, max, min = 0, styleRange = null, step = 1) {
                 const cpFrame = themeColorEditor.createElementAndAdd('div', 'color-picker-frame', container, null, null, { 'id': 'theme-creator-color-picker-slider-' + id }, 'display: ' + (name == 'Hue' ? 'block' : 'none'));
                 themeColorEditor.createElementAndAdd('label', null, cpFrame, null, name);
                 const inputEl = themeColorEditor.createElementAndAdd('input', null, cpFrame, null, null, { 'type': 'number', 'min': min, 'max': max }, 'float: right;');
                 const rangeEl = themeColorEditor.createElementAndAdd('input', 'custom-slider', cpFrame, null, null, { 'type': 'range', 'min': min, 'max': max }, styleRange);
+                if (step != 1) {
+                    inputEl.setAttribute('step', step);
+                    rangeEl.setAttribute('step', step);
+                }
                 inputEl.addEventListener('input', () => {
                     if (rangeEl.value == inputEl.value) return;
                     rangeEl.value = inputEl.value;
@@ -1357,6 +1529,10 @@ const themeColorEditor = {
                 this._bInput.value = this._bSlider.value = this.rgb[2];
                 this.updatePreviewThrottled();
             };
+            const updateFromAlphaControl = () => {
+                this.rgb[3] = parseFloat(this._aInput.value);
+                this.updatePreviewThrottled();
+            };
 
             [this._hInput, this._hSlider] = addColorSlider(this._container, 'Hue', 'h', updateFromHsvControls, 360, 0, 'background: linear-gradient(to right,hsl(0,100%,50%),hsl(60,100%,50%),hsl(120,100%,50%),hsl(180,100%,50%),hsl(240,100%,50%),hsl(300,100%,50%),hsl(360,100%,50%));');
             [this._sHsvInput, this._sHsvSlider] = addColorSlider(this._container, 'Saturation (hsv)', 's_hsv', updateFromHsvControls, 100);
@@ -1366,23 +1542,26 @@ const themeColorEditor = {
             [this._rInput, this._rSlider] = addColorSlider(this._container, 'R', 'r', updateFromRgbControls, 255);
             [this._gInput, this._gSlider] = addColorSlider(this._container, 'G', 'g', updateFromRgbControls, 255);
             [this._bInput, this._bSlider] = addColorSlider(this._container, 'B', 'b', updateFromRgbControls, 255);
+            [this._aInput, this._aSlider] = addColorSlider(this._container, 'Alpha', 'a', updateFromAlphaControl, 1, 0, null, 0.01);
 
             this.toggleDisplay(false);
             elementToAppend.append(this._container);
         }
 
         setColorByHsv(hsv) {
-            this.rgb = themeColorEditor.hsvToRgb(hsv);
+            this.rgb = themeColorEditor.hsvToRgb(hsv, this.rgb ? this.rgb[3] : 1);
             this.hsvSl = themeColorEditor.rgbToHsvSl(this.rgb);
         };
 
         setColorByHsl(hsl) {
-            this.rgb = themeColorEditor.hslToRgb(hsl);
+            this.rgb = themeColorEditor.hslToRgb(hsl, this.rgb ? this.rgb[3] : 1);
             this.hsvSl = themeColorEditor.rgbToHsvSl(this.rgb);
         }
 
         setColorByRgb(rgb) {
+            const a = this.rgb ? this.rgb[3] : 1;
             this.rgb = [...rgb];
+            if (this.rgb.length < 4) this.rgb.push(a === undefined ? 1 : a);
             this.hsvSl = themeColorEditor.rgbToHsvSl(rgb);
         };
 
@@ -1395,14 +1574,20 @@ const themeColorEditor = {
             this._vInput.value = this._vSlider.value = this.hsvSl[2];
             this._sHslInput.value = this._sHslSlider.value = this.hsvSl[3];
             this._lInput.value = this._lSlider.value = this.hsvSl[4];
+            this._aInput.value = this._aSlider.value = this.rgb[3];
             this.updatePreviewThrottled();
         }
 
+        /**
+         * Set VariableInfo that should be edited in the color picker.
+         * @param {VariableInfo} colorVar 
+         * @param {boolean} showColorPicker 
+         */
         setColorVariable(colorVar, showColorPicker = true) {
             if (this._currentColorVariable)
                 this._currentColorVariable.colorDisplayEl.classList.toggle('selected-color-cell', false);
             if (!colorVar || !colorVar.rgb) {
-                console.log(`color variable ${colorVar ? colorVar.name : '?'} didn't contain any rgb color info`);
+                console.warn(`color variable ${colorVar ? colorVar.name : '[no-name-available]'} didn't contain any rgb color info`);
                 return;
             }
             this._currentColorVariable = colorVar;
@@ -1512,19 +1697,17 @@ const themeColorEditor = {
             } else
                 // check if cell with contrast variable names (and nothing else)
                 if (rowVariableInfo && /^\s*(?:--[\w-]+\s*)+$/.test(cell.textContent)) {
+                    const contrastTable = this.createElementAndAdd('div', 'tcolor-editor-table', cell);
                     Array.from(cell.querySelectorAll('span')).forEach((spanVar) => {
 
                         const contrastVarNameMatch = spanVar.textContent.match(/--[\w-]+/);
                         if (!contrastVarNameMatch) return;
                         const contrastVarName = contrastVarNameMatch[0];
-                        cell.classList.add('tcolor-editor-contrast-cell');
 
                         // at this point the variableInfo objects are not yet all in the map variableInfo
-                        // so save only the var names at this point and set the actual objects later.
+                        // so save only the var names for now and set the actual objects later.
 
-                        const contrastElement = document.createElement('span');
-                        contrastElement.className = 'tcolor-editor-contrast-indicator';
-
+                        const contrastElement = this.createElementAndAdd('span', 'tcolor-editor-contrast-indicator');
                         const contrastVariableInfo = new this.ContrastVariableInfo(contrastVarName, contrastElement)
 
                         contrastVariableInfo.minContrast = spanVar.dataset.minContrast !== undefined ? spanVar.dataset.minContrast : 4.5; // if not specified use default min contrast of 4.5 (value for normal text in WCAG 2.0)
@@ -1542,25 +1725,36 @@ const themeColorEditor = {
                         }
 
                         if (contrastVariableAdded) {
-                            spanVar.parentElement.insertBefore(contrastElement, spanVar);
+                            const contrastRow = this.createElementAndAdd('div', 'tcolor-editor-table-row', contrastTable);
+                            const contrastCell1 = this.createElementAndAdd('div', 'tcolor-editor-table-cell', contrastRow);
+                            contrastCell1.appendChild(contrastElement);
 
-                            // luminance adjust button to get contrast
-                            const contrastFixBt = this.createElementAndAdd('span', 'tcolor-editor-button tcolor-editor-inline', null, null, '◐');
-                            contrastFixBt.addEventListener('click', () => this.fixContrastWithLightness(contrastVariableInfo.variable, new this.ContrastVariableInfo(rowVariableInfo, contrastVariableInfo.minContrast)));
-                            spanVar.parentElement.insertBefore(contrastFixBt, spanVar);
-                            contrastVariableInfo.elementResetToBaseColor = this.createElementAndAdd('span', 'tcolor-editor-button tcolor-editor-inline', null, 'Resets color to base value.', '⭯');
-                            contrastVariableInfo.elementResetToBaseColor.addEventListener('click', () => {
+                            this.createElementAndAdd('div', 'tcolor-editor-contrast-visualizer', contrastCell1, 'contrast visualizer', '◉▩', null, 'color: var(' + contrastVarName + ')');
+
+                            // luminance adjust button to get needed contrast
+                            contrastVariableInfo.elementFixContrast = this.createElementAndAdd('span', 'tcolor-editor-button tcolor-editor-inline', contrastCell1, null, '◐');
+                            contrastVariableInfo.elementFixContrast.addEventListener('click', () => this.fixContrastWithLightness(contrastVariableInfo.variable, new this.ContrastVariableInfo(rowVariableInfo, contrastVariableInfo.minContrast)));
+
+                            // reset value
+                            contrastVariableInfo.elementResetToBaseValue = this.createElementAndAdd('span', 'tcolor-editor-button tcolor-editor-inline', contrastCell1, 'Resets color to base value.', '⭯');
+                            contrastVariableInfo.elementResetToBaseValue.addEventListener('click', () => {
                                 if (contrastVariableInfo.variable)
                                     contrastVariableInfo.variable.resetToBase();
                             });
-                            spanVar.parentElement.insertBefore(contrastVariableInfo.elementResetToBaseColor, spanVar);
 
-                            const cv = this.createElementAndAdd('div', 'tcolor-editor-contrast-visualizer', null, 'contrast visualizer', '◉▩', null, 'color: var(' + contrastVarName + ')');
-                            spanVar.parentElement.insertBefore(cv, spanVar);
+                            if (spanVar.nextElementSibling && spanVar.nextElementSibling.tagName === 'BR')
+                                spanVar.nextElementSibling.remove();
 
+                            const contrastCell2 = this.createElementAndAdd('div', 'tcolor-editor-table-cell', contrastRow);
+                            contrastCell2.appendChild(spanVar);
                             this.addVariableLink(spanVar);
                         }
                     });
+
+                    if (contrastTable.previousElementSibling
+                        && contrastTable.previousElementSibling.tagName === 'P'
+                        && contrastTable.previousElementSibling.childElementCount === 0)
+                        contrastTable.previousElementSibling.remove();
                 }
         });
     },
@@ -1571,7 +1765,9 @@ const themeColorEditor = {
     initializeVariables: function () {
         this.themeBaseDark = document.documentElement.classList.contains('view-dark');
         const useThemeName = document.documentElement.className.split(' ').find((c) => c.startsWith('theme-'));
-        this.applyTheme(useThemeName);
+        // apply current theme variables. If loaded from file, use the definitions of the theme-selector element
+        if (!this.applyTheme(useThemeName) && useThemeName)
+            this.applyValuesOfCurrentPageTheme();
 
         const rootStyles = this.baseCss.get('root');
 
@@ -1596,6 +1792,7 @@ const themeColorEditor = {
             if (v.contrastVariables) {
                 v.contrastVariables.forEach((contrastVariable) => {
                     contrastVariable.variable = this.variableInfo.get(contrastVariable.variableName);
+                    if (!contrastVariable.variable) return;
 
                     if (contrastVariable.variable.contrastVariableOfOtherColors)
                         contrastVariable.variable.contrastVariableOfOtherColors.push(contrastVariable);
@@ -1627,7 +1824,7 @@ const themeColorEditor = {
      * @param {string?} title 
      */
     createElementAndAdd: function (tagName, className = null, appendTo = null, title = null, innerHtml = null, attributes = null, style = null) {
-        let el = document.createElement(tagName);
+        const el = document.createElement(tagName);
         if (className) el.className = className;
         if (appendTo) appendTo.appendChild(el);
         if (title) el.title = title;
@@ -1695,7 +1892,7 @@ const themeColorEditor = {
                     return propValue;
                 },
                 set: function (newValue) {
-                    if (propValue === newValue && propertyName !== 'useIndirectDefinition') return;
+                    if (propValue === newValue) return;
                     propValue = newValue;
                     if (el.type === 'checkbox')
                         el.checked = newValue;
@@ -1761,7 +1958,7 @@ const themeColorEditor = {
 
         bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-inline', buttonContainer, 'Tries to fix all the contrast issues of this variable to the colors in the contrast column in this row by changing the lightness of the var ' + colorVariableInfo.name, '◐');
         bt.addEventListener('click', (e) => { this.fixContrastWithLightness(this.variableInfo.get(e.target.parentElement.dataset.varName)); });
-        bt = colorVariableInfo.elementResetToBaseColor = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-inline', buttonContainer, 'reset color to theme value', '⭯');
+        bt = colorVariableInfo.elementResetToBaseValue = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-inline', buttonContainer, 'reset color to theme value', '⭯');
         bt.addEventListener('click', (e) => {
             const varInfo = this.variableInfo.get(e.target.parentElement.dataset.varName);
             if (varInfo)
@@ -1797,7 +1994,7 @@ const themeColorEditor = {
         this.createElementAndAdd('br', null, subContainer);
         this.addColorOptionControlAndBind('number', ' saturation factor', 'saturation factor (1: no change)', colorVariableInfo, 'optionSaturationFactor', subContainer, { 'size': '3', 'value': '1', 'min': '0', 'step': '0.1' });
         this.createElementAndAdd('br', null, subContainer);
-        this.addColorOptionControlAndBind('number', ' lightness', 'lightness factor (1: no change)', colorVariableInfo, 'optionLightnessFactor', subContainer, { 'size': '3', 'value': '1', 'min': '0', 'step': '0.1' });
+        this.addColorOptionControlAndBind('number', ' lightness factor', 'lightness factor (1: no change)', colorVariableInfo, 'optionLightnessFactor', subContainer, { 'size': '3', 'value': '1', 'min': '0', 'step': '0.1' });
 
         colorVarNameElement.classList.add('tcolor-editor-variable-name-container');
     },
@@ -1858,7 +2055,7 @@ const themeColorEditor = {
         while (loopCounter < 20) {
             loopCounter++;
             const lightness = (minLightness + maxLightness) / 2;
-            adjustedColor = this.hslToRgb([hsl[0], hsl[1], lightness]);
+            adjustedColor = this.hslToRgb([hsl[0], hsl[1], lightness], rgb[3]);
             diff = relativeLuminanceTarget - this.relativeLuminance(adjustedColor);
             if (Math.abs(diff) < maxDifference) {
                 break;
@@ -1879,9 +2076,10 @@ const themeColorEditor = {
     adjustLightness: function (color, lightnessFactor) {
         if (lightnessFactor == 1) return color;
         lightnessFactor = Math.max(0, lightnessFactor);
-        return color.map(v => {
+        const rgb = color.slice(0, 3).map(v => {
             return Math.min(255, Math.round(v * lightnessFactor));
         });
+        return [...rgb, rgb[3]];
     },
 
     /**
@@ -1900,7 +2098,7 @@ const themeColorEditor = {
     },
 
     /**
-     * Calculates the contrast between two colors using the relative luminance.
+     * Calculates the contrast between two colors using the relative luminance. Only approximation if alpha is < 1.
      * @param {number[]} rgb1 
      * @param {number[]} rgb2 
      * @returns 
@@ -1909,7 +2107,11 @@ const themeColorEditor = {
         if (!rgb1 || !rgb2) return undefined;
         const relLum1 = this.relativeLuminance(rgb1);
         const relLum2 = this.relativeLuminance(rgb2);
-        return this.luminanceContrast(relLum1, relLum2);
+        if (rgb1[3] == 1 && rgb2[3] == 1)
+            return this.luminanceContrast(relLum1, relLum2);
+        // approximation of effect of alpha on the contrast
+        // the exact effect of the alpha depends on the context where the colors are used
+        return this.luminanceContrast(relLum1 * rgb1[3] + relLum2 * (1 - rgb1[3]), relLum2 * rgb2[3] + relLum1 * (1 - rgb2[3]));
     },
 
     luminanceContrast: function (relLum1, relLum2) {
@@ -2067,21 +2269,21 @@ const themeColorEditor = {
         const iconLinkFilter = variable.name === '--wiki-content-link-color' ? this.filterCreator.calculateFilter(variable.rgb).filterString : null;
 
         if (varValue)
-            document.documentElement.style.setProperty(variable.name, varValue);
+            this.pageRules.setProperty(variable.name, varValue);
         if (varValueRgb)
-            document.documentElement.style.setProperty(variable.name + '--rgb', varValueRgb);
+            this.pageRules.setProperty(variable.name + '--rgb', varValueRgb);
         if (iconLinkFilter)
-            document.documentElement.style.setProperty('--wiki-icon-to-link-filter', iconLinkFilter);
+            this.pageRules.setProperty('--wiki-icon-to-link-filter', iconLinkFilter);
 
         // update variable on previews
         this.previewPopups.forEach((p) => {
-            if (p.closed) return;
+            if (p.w.closed) return;
             if (varValue)
-                p.document.documentElement.style.setProperty(variable.name, varValue);
+                p.s.setProperty(variable.name, varValue);
             if (varValueRgb)
-                p.document.documentElement.style.setProperty(variable.name + '--rgb', varValueRgb);
+                p.s.setProperty(variable.name + '--rgb', varValueRgb);
             if (iconLinkFilter)
-                p.document.documentElement.style.setProperty('--wiki-icon-to-link-filter', iconLinkFilter);
+                p.s.setProperty('--wiki-icon-to-link-filter', iconLinkFilter);
         });
 
         // update contrast indicators
@@ -2119,27 +2321,31 @@ const themeColorEditor = {
         }
 
         w.addEventListener('DOMContentLoaded', () => {
-            this.setBackgroundImageExplicitly(w, getComputedStyle(window.document.body).backgroundImage);
+            const styleElement = this.addPreviewStyleElement(w.document);
+            w.document.body.style.setProperty('background', getComputedStyle(document.body).background);
+
             this.variableInfo.forEach((v) => {
                 // apply current values to preview
                 const varValue = v.valueStringOutput();
                 if (varValue)
-                    w.document.documentElement.style.setProperty(v.name, varValue);
+                    styleElement.setProperty(v.name, varValue);
                 // if variable has rgb variant, also save that
                 const varValueRgb = v.hasFormatRgb ? v.valueColorAsCommaRgbString() : null;
                 if (varValueRgb)
-                    w.document.documentElement.style.setProperty(v.name + '--rgb', varValueRgb);
+                    styleElement.setProperty(v.name + '--rgb', varValueRgb);
+                const iconLinkFilter = v.name === '--wiki-content-link-color' ? this.filterCreator.calculateFilter(v.rgb).filterString : null;
+                if (iconLinkFilter)
+                    styleElement.setProperty('--wiki-icon-to-link-filter', iconLinkFilter);
             });
+            this.previewPopups.push({ w: w, s: styleElement });
+            this.previewPopups = this.previewPopups.filter((p) => !p.w.closed);
         });
-
-        this.previewPopups.push(w);
-        this.previewPopups = this.previewPopups.filter((p) => !p.closed);
     },
 
     saveDefaultPopupLocation: function () {
-        const p = this.previewPopups.find((pi) => !pi.closed);
+        const p = this.previewPopups.find((pi) => !pi.w.closed);
         if (p)
-            localStorage.setItem('theme-creator-popup-rect', `screenX=${p.screenX}, screenY=${p.screenY}, width=${p.innerWidth}, height=${p.innerHeight}`);
+            localStorage.setItem('theme-creator-popup-rect', `screenX=${p.w.screenX}, screenY=${p.w.screenY}, width=${p.w.innerWidth}, height=${p.w.innerHeight}`);
     },
 
     /**

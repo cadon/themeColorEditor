@@ -7,10 +7,12 @@
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(10px);
     border-radius: 8px;
-    z-index: 10;
+    z-index: 20;
 }
 
-.tcolor-editor-control a {
+.tcolor-editor-control a,
+.tcolor-editor-control h2,
+.tcolor-editor-control h3 {
     color: white;
 }
 
@@ -42,6 +44,7 @@
 .tcolor-editor-color-picker-container {
     position: fixed;
     bottom: 0;
+    left: 1em;
     display: flex;
     flex-direction: column;
     gap: 0.2rem;
@@ -348,6 +351,7 @@ body {
 .tcolor-editor-contrast-visualizer {
     display: inline-block;
     font-size: 1.4em;
+    line-height: 1em;
 }
 
 .tcolor-editor-variable-title {
@@ -365,4 +369,26 @@ body {
 
 .tcolor-editor-pointer {
     cursor: pointer;
+}
+
+tr.tcolor-narrow-row>td {
+    padding-bottom: 0;
+}
+
+.tcolor-narrow-row td>* {
+    height: 1.5em;
+    overflow-y: hidden;
+}
+
+.tcolor-editor-table {
+    display: table;
+}
+
+.tcolor-editor-table-row {
+    display: table-row;
+}
+
+.tcolor-editor-table-cell {
+    display: table-cell;
+    min-width: 9.2em;
 }
