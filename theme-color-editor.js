@@ -111,9 +111,9 @@ const themeColorEditor = {
         // check if page should display the color editor
         let initializeColorEditor = false;
         for (let table of document.querySelectorAll('table')) {
-            if (table.rows.length < 2 || table.rows[0].length < 3) break;
+            if (table.rows.length < 2 || table.rows[0].length < 3) continue;
             // the color table contains "Variable name" in first cell
-            if (table.rows[0].cells[0].textContent.trim() !== 'Variable name') break;
+            if (table.rows[0].cells[0].textContent.trim() !== 'Variable name') continue;
 
             const secondRowFirstCell = table.rows[1].cells[0];
             if (secondRowFirstCell.innerText.match(/^--[-\w]+$/)) {
@@ -1677,7 +1677,7 @@ const themeColorEditor = {
 
             // check if color display cell
             else if (rowVariableName && 'var(' + rowVariableName + ')' === cellStyleBackgroundColor
-                && cell.textContent.trim() == '') {
+                && cell.textContent.trim() == '' && !rowVariableInfo) {
                 // add onclick event on color cell
                 const thisCell = cell;
                 cell.addEventListener('click', () => this.editColorInColorPicker(rowVariableName, thisCell));
