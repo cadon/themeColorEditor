@@ -111,9 +111,9 @@ const themeColorEditor = {
         // check if page should display the color editor
         let initializeColorEditor = false;
         for (let table of document.querySelectorAll('table')) {
-            if (table.rows.length < 2 || table.rows[0].length < 3) return;
+            if (table.rows.length < 2 || table.rows[0].length < 3) break;
             // the color table contains "Variable name" in first cell
-            if (table.rows[0].cells[0].textContent.trim() !== 'Variable name') return;
+            if (table.rows[0].cells[0].textContent.trim() !== 'Variable name') break;
 
             const secondRowFirstCell = table.rows[1].cells[0];
             if (secondRowFirstCell.innerText.match(/^--[-\w]+$/)) {
