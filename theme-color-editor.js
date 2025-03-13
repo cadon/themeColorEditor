@@ -1004,8 +1004,8 @@ const themeColorEditor = {
             // trigger the update manually (the property won't be changed in this case and the updating is not triggered)
             const updateValueFromDefinition = useIndirectDefinition && this.useIndirectDefinition && this._indirectDefinition !== v;
             this.dependsOnVarsEl.value = useIndirectDefinition ? v : '';
-            this.useIndirectDefinition = useIndirectDefinition;
             this._indirectDefinition = v;
+            this.useIndirectDefinition = useIndirectDefinition;
             if (updateValueFromDefinition) {
                 this.enableIndirectDefinition(true);
                 this.updateDependencyVariables();
