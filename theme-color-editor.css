@@ -392,3 +392,13 @@ tr.tcolor-narrow-row>td {
     display: table-cell;
     min-width: 9.2em;
 }
+
+.tcolor-editor-color-splotch {
+    display: inline-block;
+    height: 1em;
+    width: 1em;
+    box-sizing: border-box;
+    vertical-align: text-bottom;
+    border-radius: 50%;
+    border: 1px solid #000;
+}

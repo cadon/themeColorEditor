@@ -1711,7 +1711,7 @@ Base definition: ${this.baseValue}`;
                 this.addColorOptionElements(rowVariableInfo, rowVariableNameElement);
             } else if (notesColumnIndex == columnIndex) {
                 // add links to the var anchors if a variable is mentioned in a code tag. clicking on the variable to edit its color
-                Array.from(cell.querySelectorAll('code')).forEach((codeVarEl) => { this.addVariableLink(codeVarEl); });
+                Array.from(cell.querySelectorAll('code')).forEach((codeVarEl) => { this.addVariableLink(codeVarEl, true); });
                 this.applyCustomWarnings(cell, rowVariableInfo);
             } else
                 // check if cell with contrast variable names (and nothing else)
@@ -1939,7 +1939,7 @@ Base definition: ${this.baseValue}`;
      * Adds interactivity to a variable name in a text (click event for color editing and prepend link to jump to color row).
      * @param {HTMLElement} el 
      */
-    addVariableLink: function (el) {
+    addVariableLink: function (el, addSplotch = false) {
         const varInfo = el.textContent.match(/^--[\w-]+$/);
         const varName = varInfo ? varInfo[0] : null;
         if (!varName) return;
@@ -1951,6 +1951,9 @@ Base definition: ${this.baseValue}`;
         el.parentElement.insertBefore(linkToVarWrapper, el);
         const linkToVar = this.createElementAndAdd('a', 'tcolor-editor-button tcolor-editor-inline tcolor-editor-link-to-var', null, 'jump to color row', '↪', { 'href': '#var-' + varName });
         linkToVarWrapper.append(linkToVar, el);
+        if (addSplotch) {
+            this.createElementAndAdd('span', 'tcolor-editor-color-splotch', linkToVarWrapper, null, null, null, `background-color: var(${varName})`);
+        }
     },
 
     /**
