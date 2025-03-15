@@ -659,6 +659,12 @@ const themeColorEditor = {
             });
     },
 
+    applyAllSuggestions: function () {
+        this.variableInfo.forEach((v) => {
+            v.setValueByDefinition();
+        });
+    },
+
     importStyles: function (useLightView) {
         const varMatches = Array.from(this.inOutTextarea.value.matchAll(/(--[-\w]+)\s*:\s*([^;]+)\s*;(?:[ \t]*\/\*[ \t]*\{([^}]+)\}[ \t]*\*\/)?/g));
         if (varMatches.length == 0) {
@@ -831,15 +837,16 @@ const themeColorEditor = {
         toolBarElement.className = 'tcolor-editor-toolbar tcolor-editor-control';
         document.body.appendChild(toolBarElement);
 
-        // adjust global lightness
+        // tools for all variables
         const divTools = this.createElementAndAdd('div', 'tcolor-editor-groupbox', toolBarElement);
         this.createElementAndAdd('span', 'tcolor-editor-groupbox-heading', divTools, null, 'global color tools');
         let bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divTools,
-            'Inverts the luminance of all colors (switching dark <-> light)\nThe effect might be unexpected.', 'invert all color\'s luminance');
-        bt.addEventListener('click', () => this.invertAllLightness(true));
-        bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divTools,
             'Inverts the lightness of all colors (switching dark <-> light)\nAlso consider to use the "rebase" button to use the according view as base (light / dark).', 'invert all color\'s lightness');
         bt.addEventListener('click', () => this.invertAllLightness());
+        bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divTools,
+            'Applies all suggested values to according values.\nThis affects usually black/white base colors and secondary colors dependant on other colors.\nThis can be done when starting a color theme, later it might overwrite changes you already made.',
+            'apply all suggestions');
+        bt.addEventListener('click', () => this.applyAllSuggestions());
 
         // theme loader
         const divThemeSelector = this.createElementAndAdd('div', 'tcolor-editor-groupbox', toolBarElement);
@@ -976,6 +983,11 @@ const themeColorEditor = {
         //baseValue;
 
         /**
+         * Suggested values of this color. If defined it is an object with either a property indirect or explicit colors in the properties light and dark.
+         */
+        //suggestedValue;
+
+        /**
          * Indirect definition of this variable in a string, e.g. equal to other color like 'var(--other-var)' or mix 'color-mix(in srgb, #123, #f00)'
          */
         //_indirectDefinition;
@@ -1013,6 +1025,7 @@ const themeColorEditor = {
             }
             if (useIndirectDefinition)
                 this.setColor(this.getCalculatedColorRgb(), alsoSetAsBase, true);
+            this.saveExplicitRgbInOutput = false;
         }
 
         /**
@@ -1240,9 +1253,11 @@ const themeColorEditor = {
 
         /**
          * Sets variable according to the passed definition which can have multiple properties.
+         * This is usually a suggestion that has the property indirect or both explicit color definitions in the properties light and dark.
          * @param {object} definition 
          */
-        setValueByDefinition(definition, setSaveExplicitRgb = true) {
+        setValueByDefinition(definition = undefined) {
+            if (!definition) definition = this.suggestedValue;
             if (!definition) return;
             if (definition.light && !themeColorEditor.themeBaseDark) {
                 this.setColor(themeColorEditor.parseColor(definition.light));
@@ -1255,12 +1270,12 @@ const themeColorEditor = {
             if (!definition.indirect) return;
 
             this.setValue(definition.indirect);
-            if (setSaveExplicitRgb === true || setSaveExplicitRgb === false)
-                this.saveExplicitRgbInOutput = setSaveExplicitRgb;
-            this.optionInvert = definition.invert != undefined ? !!definition.invert : false;
-            this.optionHueRotate = definition.hueRotate != undefined ? definition.hueRotate : 0;
-            this.optionSaturationFactor = definition.saturationFactor != undefined ? definition.saturationFactor : 1;
-            this.optionLightnessFactor = definition.lightnessFactor != undefined ? definition.lightnessFactor : 1;
+            // color adjustments
+            this.saveExplicitRgbInOutput = definition.invert !== undefined || definition.hueRotate != undefined || definition.saturationFactor != undefined || definition.lightnessFactor != undefined;
+            this.optionInvert = definition.invert !== undefined ? !!definition.invert : false;
+            this.optionHueRotate = definition.hueRotate !== undefined ? definition.hueRotate : 0;
+            this.optionSaturationFactor = definition.saturationFactor !== undefined ? definition.saturationFactor : 1;
+            this.optionLightnessFactor = definition.lightnessFactor !== undefined ? definition.lightnessFactor : 1;
         }
 
         colorChanged(variable) {
@@ -1277,7 +1292,11 @@ const themeColorEditor = {
                 this.elementEqualToBaseColor.title = `This color is equal to the base style.\nThe variable will not be included in the output.\nThis color: rgb(${this.rgb[3] == 1 ? this.rgb.slice(0, 3) : this.rgb}), ${themeColorEditor.rgbToHexString(this.rgb)}`;
             } else {
                 this.elementEqualToBaseColor.style.backgroundColor = '#ffff41';
-                this.elementEqualToBaseColor.title = `This color is different to the base style.\nThe variable will be included in the output.\nThis color: rgb(${this.rgb[3] == 1 ? this.rgb.slice(0, 3) : this.rgb}), ${themeColorEditor.rgbToHexString(this.rgb)}\nBase color: rgb(${this.baseColor}), ${themeColorEditor.rgbToHexString(this.baseColor)}`;
+                this.elementEqualToBaseColor.title = `This color is different to the base definition.
+The variable will be included in the output.
+This color: rgb(${this.rgb[3] == 1 ? this.rgb.slice(0, 3) : this.rgb}), ${themeColorEditor.rgbToHexString(this.rgb)}
+Base color: rgb(${this.baseColor}), ${themeColorEditor.rgbToHexString(this.baseColor)}
+Base definition: ${this.baseValue}`;
             }
 
             this.elementResetToBaseValue.style.visibility = colorEqualToBase ? 'hidden' : 'visible';
@@ -1782,9 +1801,9 @@ const themeColorEditor = {
                 const varInfo = this.variableInfo.get(v.name.substring(0, v.name.length - 10));
                 const sourceVarName = varInfo ? varInfo.name : null;
                 if (sourceVarName) {
+                    v.setValue(`var(${sourceVarName})`);
                     v.optionInvert = true;
                     v.saveExplicitRgbInOutput = true;
-                    v.setValue(`var(${sourceVarName})`);
                 }
             }
 
@@ -1968,9 +1987,10 @@ const themeColorEditor = {
         // suggestion button
         const suggestion = this.variableSuggestions[colorVariableInfo.name];
         if (suggestion) {
+            colorVariableInfo.suggestedValue = suggestion;
             bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-inline', buttonContainer, 'set variable to default suggestion: ' + this.createSuggestionInfo(suggestion), '◈');
             bt.addEventListener('click', () => {
-                colorVariableInfo.setValueByDefinition(suggestion);
+                colorVariableInfo.setValueByDefinition();
             });
         }
 
