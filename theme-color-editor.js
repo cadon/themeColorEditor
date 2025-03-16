@@ -519,7 +519,10 @@ const themeColorEditor = {
         if (themeName != 'root' && themeName != 'view-light' && themeName != 'view-dark')
             this.applyTheme(this.themeBaseDark ? 'view-dark' : 'view-light');
 
-        if (!themeName) return false;
+        if (!themeName) {
+            console.warn(`cannot apply styles, themeName was empty`);
+            return false;
+        }
         const theme = this.baseCss.get(themeName);
         if (!theme) {
             console.warn(`no theme with name "${themeName}" found to apply.`);
@@ -533,6 +536,7 @@ const themeColorEditor = {
         });
 
         this.setBackgroundImageExplicitly();
+        return true;
     },
 
     /**
