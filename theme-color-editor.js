@@ -90,6 +90,7 @@ const themeColorEditor = {
     baseCss: undefined,
     /**
      * Indicator if the current theme is based on dark view or light view.
+     * To also set the UI element accordingly use the function setThemeView(viewDark: boolean).
      */
     themeBaseDark: false,
     themeBaseSelector: undefined,
@@ -661,6 +662,18 @@ const themeColorEditor = {
                 if (!v.useIndirectDefinition)
                     v.setColor(this.inverseLightnessOfColor(v.rgb));
             });
+        // adjust view the theme is based on (view-light or view-dark)
+        // if variable --wiki-content-text-color is available, use that as indicator (dark text: view-light and vice versa)
+        // if that variable is not existing, just toggle the view
+        let useViewDark = undefined;
+        const defaultVarTextColor = this.variableInfo.get('--wiki-content-text-color');
+        if (defaultVarTextColor) {
+            useViewDark = this.rgbToHsvSl(defaultVarTextColor.rgb)[4] > 50; // use dark-view if lightness of text color is larger than 50%
+        } else {
+            useViewDark = !this.themeBaseDark;
+        }
+        this.setThemeView(useViewDark);
+        this.applyThemeAsBase(this.themeBaseDark ? 'view-dark' : 'view-light')
     },
 
     applyAllSuggestions: function () {
@@ -845,7 +858,7 @@ const themeColorEditor = {
         const divTools = this.createElementAndAdd('div', 'tcolor-editor-groupbox', toolBarElement);
         this.createElementAndAdd('span', 'tcolor-editor-groupbox-heading', divTools, null, 'global color tools');
         let bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divTools,
-            'Inverts the lightness of all colors (switching dark <-> light)\nAlso consider to use the "rebase" button to use the according view as base (light / dark).', 'invert all color\'s lightness');
+            'Inverts the lightness of all colors (switching dark <-> light)\nThe base view (dark or light theme) is also toggled. If that is not correct you can change that using the "rebase" button after setting the view toggle button.', 'invert all color\'s lightness');
         bt.addEventListener('click', () => this.invertAllLightness());
         bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divTools,
             'Applies all suggested values to according values.\nThis affects usually black/white base colors and secondary colors dependant on other colors.\nThis can be done when starting a color theme, later it might overwrite changes you already made.',
@@ -855,9 +868,15 @@ const themeColorEditor = {
         // theme loader
         const divThemeSelector = this.createElementAndAdd('div', 'tcolor-editor-groupbox', toolBarElement);
         this.createElementAndAdd('span', 'tcolor-editor-groupbox-heading', divThemeSelector, null, 'themes');
-        divThemeSelector.appendChild(this.createCheckbox('view-light',
-            (e) => { this.themeBaseDark = e.target.checked; e.target.nextSibling.nodeValue = e.target.checked ? 'view-dark' : 'view-light'; },
-            'view the theme is based on', true));
+        const viewToggleEl = this.createCheckbox('view-light',
+            (e) => { this.setThemeView(e.target.checked); },
+            'view the theme is based on', true);
+        divThemeSelector.appendChild(viewToggleEl);
+        this.setThemeView = (viewDark = false) => {
+            this.themeBaseDark = viewDark;
+            viewToggleEl.firstChild.checked = viewDark; // viewToggleEl is label, firstChild is the input:checkbox
+            viewToggleEl.lastChild.nodeValue = viewDark ? 'view-dark' : 'view-light';
+        };
         this.themeBaseSelector = this.createElementAndAdd('select', null, divThemeSelector);
         bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divThemeSelector,
             'Sets all variables to the values of a preset view (light/dark) and theme.', 'load theme variables');
@@ -1786,7 +1805,7 @@ Base definition: ${this.baseValue}`;
      * Sets the initial values of all variables depending on the currently selected theme.
      */
     initializeVariables: function () {
-        this.themeBaseDark = document.documentElement.classList.contains('view-dark');
+        this.setThemeView(document.documentElement.classList.contains('view-dark'));
         const useThemeName = document.documentElement.className.split(' ').find((c) => c.startsWith('theme-'));
         // apply current theme variables. If loaded from file, use the definitions of the theme-selector element
         if (!this.applyTheme(useThemeName) && useThemeName)
