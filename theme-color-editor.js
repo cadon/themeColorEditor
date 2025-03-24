@@ -854,9 +854,25 @@ const themeColorEditor = {
         toolBarElement.className = 'tcolor-editor-toolbar tcolor-editor-control';
         document.body.appendChild(toolBarElement);
 
-        // tools for all variables
+        // global color tools
         const divTools = this.createElementAndAdd('div', 'tcolor-editor-groupbox', toolBarElement);
         this.createElementAndAdd('span', 'tcolor-editor-groupbox-heading', divTools, null, 'global color tools');
+        this.createElementAndAdd('span', 'tcolor-editor-toolbarText', divTools,
+            'Select on which view the theme is based on (light or dark).\nThis has an effect whether a variable will be in the output or not\n(variables equal to their base value of the view will not be included in the output).',
+            'theme based on');
+        const viewToggleEl = this.createCheckbox('view-light',
+            (e) => {
+                this.setThemeView(e.target.checked);
+                this.applyThemeAsBase(this.themeBaseDark ? 'view-dark' : 'view-light');
+            },
+            'view the theme is based on', true);
+        divTools.appendChild(viewToggleEl);
+        this.createElementAndAdd('div', 'tcolor-editor-separator', divTools);
+        this.setThemeView = (viewDark = false) => {
+            this.themeBaseDark = viewDark;
+            viewToggleEl.firstChild.checked = viewDark; // viewToggleEl is label, firstChild is the input:checkbox
+            viewToggleEl.lastChild.nodeValue = viewDark ? 'view-dark' : 'view-light';
+        };
         let bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divTools,
             'Inverts the lightness of all colors (switching dark <-> light)\nThe base view (dark or light theme) is also toggled. If that is not correct you can change that using the "rebase" button after setting the view toggle button.', 'invert all color\'s lightness');
         bt.addEventListener('click', () => this.invertAllLightness());
@@ -868,25 +884,14 @@ const themeColorEditor = {
         // theme loader
         const divThemeSelector = this.createElementAndAdd('div', 'tcolor-editor-groupbox', toolBarElement);
         this.createElementAndAdd('span', 'tcolor-editor-groupbox-heading', divThemeSelector, null, 'themes');
-        const viewToggleEl = this.createCheckbox('view-light',
-            (e) => { this.setThemeView(e.target.checked); },
-            'view the theme is based on', true);
-        divThemeSelector.appendChild(viewToggleEl);
-        this.setThemeView = (viewDark = false) => {
-            this.themeBaseDark = viewDark;
-            viewToggleEl.firstChild.checked = viewDark; // viewToggleEl is label, firstChild is the input:checkbox
-            viewToggleEl.lastChild.nodeValue = viewDark ? 'view-dark' : 'view-light';
-        };
         this.themeBaseSelector = this.createElementAndAdd('select', null, divThemeSelector);
         bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divThemeSelector,
-            'Sets all variables to the values of a preset view (light/dark) and theme.', 'load theme variables');
+            'Sets all variables to the values of the selected theme or view in the select control above.', 'load theme variables');
         bt.addEventListener('click', () => this.applyTheme(this.themeBaseSelector.options[this.themeBaseSelector.selectedIndex].text));
+        this.createElementAndAdd('div', 'tcolor-editor-separator', divThemeSelector);
         bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divThemeSelector,
-            'Sets all base values of the variables to the selected view (light or dark).\nThis has an effect whether a variable will be in the output or not (variables equal to their base value of the view won\'t be included)',
-            'rebase variables');
-        bt.addEventListener('click', () => this.applyThemeAsBase(this.themeBaseDark ? 'view-dark' : 'view-light'));
-        bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divThemeSelector,
-            'Load all variables of the currently selected theme.\nIt is recommended to do this after loading a theme with the theme-selector that is saved in an extra file.\nThis will not reset initially indirect defined values.\nTo do this consider loading a base view (light or dark) first.', 'load current theme variables');
+            'Load all variables of the currently selected wiki theme (using the wiki theme-selector at the top of the page).\nIt is recommended to do this after loading a theme from a separate file with the theme-selector.\nThis will not reset initially indirect defined values.\nTo do this consider loading a base view (light or dark) first.',
+            'load wiki theme variables');
         bt.addEventListener('click', () => this.applyValuesOfCurrentPageTheme());
 
         // import export

@@ -155,6 +155,16 @@ a.tcolor-editor-button:hover {
     display: none;
 }
 
+.tcolor-editor-toolbarText {
+    font-size: 0.9em;
+    margin: 0 0.2em;
+}
+
+.tcolor-editor-separator {
+    margin: 0.2em 0.1em;
+    border-top: 1px solid #646464;
+}
+
 .tcolor-editor-number-label {
     white-space: nowrap;
 }
