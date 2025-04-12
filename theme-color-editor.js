@@ -904,7 +904,7 @@ const themeColorEditor = {
         divImportExport.appendChild(this.createCheckbox('include explicit adjustments',
             (e) => { this.exportIncludeExplicitOptions = e.target.checked; },
             'Include color options set for explicit color adjustments (e.g. invert, hue-rotate).\nThis should be only enabled if you want to save your work and import later.\nThis should not be enabled to export the css for use on a wiki.'));
-        const inOutButton = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divImportExport, null, 'input output view toggle');
+        const inOutButton = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divImportExport, null, 'input-output view toggle');
         inOutButton.addEventListener('click', () => this.inOutStyleSheetEl.classList.toggle('transition-hide'));
         bt = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', divImportExport, null, 'copy styles to clipboard');
         bt.addEventListener('click', () => navigator.clipboard.writeText(this.exportStyles(true)));
@@ -943,29 +943,55 @@ const themeColorEditor = {
         const shortManual = this.createElementAndAdd('div', 'tcolor-editor-control tcolor-editor-center-popup transition-show transition-hide', document.body);
         bt = this.createElementAndAdd('div', 'tcolor-editor-close-button', shortManual, null, '×');
         bt.addEventListener('click', (e) => e.target.parentElement.classList.toggle('transition-hide', true));
-        const manualButton = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', toolBarElement, 'toggle display of short manual', '?', null, 'align-self: flex-start;');
+        const manualButton = this.createElementAndAdd('button', 'tcolor-editor-button tcolor-editor-full-width', toolBarElement, 'toggle display of short manual', ' ? ', null,
+            'align-self: flex-start; padding:0.1em 0.5em; background:linear-gradient(to bottom, #229, #004);');
         manualButton.addEventListener('click', () => shortManual.classList.toggle('transition-hide'));
-        this.createElementAndAdd('div', null, shortManual, null, `<h2>Short Manual</h2>
+        this.createElementAndAdd('div', null, shortManual, null, `
+    <h2>General info</h2>
+    <ul>
+        <li>This tool allows to edit theme colors, but it cannot save it directly to the wiki. To use the colors on the
+            wiki,
+            export the css code and save it manually, usually to this page (MediaWiki:common.css).</li>
+        <li><a href="https://support.wiki.gg/wiki/Theme_Color_Editor" target="_blank">Detailed instructions about the
+                Theme Color Editor (this tool)</a></li>
+        <li><a href="https://support.wiki.gg/wiki/Theming" target="_blank">General info about theming a wiki.gg wiki</a>
+        </li>
+        <li><a href="https://support.wiki.gg/wiki/Theming#Creating_more_than_one_theme" target="_blank">Section about
+                using multiple color themes on a wiki</a></li>
+    </ul>
+    <h2>Theme Color Editor short manual</h2>
+    <ul>
+        <li>In the toolbar set <span class="tcolor-editor-toggle-button" style="cursor:auto">view-light</span> or <span
+                class="tcolor-editor-toggle-button" style="cursor:auto">view-dark</span></li>
+        <li>Optionally load an existing theme as starting point</li>
         <ul>
-            <li>if themes all saved in common.css</li>
+            <li>If themes all saved in common.css:</li>
             <ul>
-                <li>In toolbar toggle to light or dark view</li>
-                <li>In toolbar select and load theme the new theme is based on</li>
+                <li>In the toolbar select the theme and load it with <span class="tcolor-editor-button"
+                        style="cursor:auto; display: inline-block">load theme variables</span></li>
             </ul>
-            <li>if themes saved in separate files</li>
+            <li>If themes saved in separate files:</li>
             <ul>
-                <li>In toolbar toggle to light or dark view</li>
-                <li>In theme-selector (top right) select theme the new theme is based on</li>
-            </ul>
-            <li>Adjust colors by clicking on them, make sure contrasts are fulfilled</li>
-            <li>Make use of indirect definitions to simplify color adjustments (export indirect definitions by enabling &quot;include explicit adjustments&quot;)</li>
-            <li>Export theme to save in common.css or theme-page</li>
-            <ul>
-                <li>if wiki styling uses --rgb variables, make sure to enable the checkbox</li>
-                <li>if indirect definitions should be exported, enable &quot;include explicit adjustments&quot; checkbox.<br/>Enable that only for saving a theme for later, this option should be disabled when saving for wiki styles.</li>
-                <li>export themes directly to clipboard via button or view in export window</li>
+                <li>At the top right use the Appearance drop down menu to choose a theme</li>
+                <li>Load the theme colors via the toolbar button <span class="tcolor-editor-button"
+                        style="cursor:auto; display: inline-block">load wiki theme variables</span></li>
             </ul>
         </ul>
+        <li>Adjust colors by clicking on them while making sure the contrasts are fulfilled</li>
+        <li>Make use of indirect definitions to simplify color adjustments</li>
+        <li>Export theme to save in common.css or theme-page</li>
+        <ul>
+            <li>If wiki styling uses --rgb variables (usually wikis created before 2025), make sure to enable this
+                checkbox</li>
+            <li>If indirect definitions should be exported, enable &quot;include explicit adjustments&quot;
+                checkbox.<br />Enable that only for saving a theme for later (e.g. in a local text file and later import
+                it for use as base definition for other themes).<br />This option should be disabled when exporting
+                for wiki styles.</li>
+            <li>Export themes directly to clipboard with <span class="tcolor-editor-button"
+                        style="cursor:auto; display: inline-block">copy styles to clipboard</span> or using <span class="tcolor-editor-button"
+                        style="cursor:auto; display: inline-block">input-output view toggle</span></li>
+        </ul>
+    </ul>
             `);
     },
     //#endregion
